@@ -33,6 +33,15 @@ composer install
 npm install
 ```
 
+## Env Vars and Applicatoin Key
+
+If this is your first time running the application you will need to run the following commands to copy the local env configs and to generate an enryption key for the application.
+
+```
+cp .env.example .env
+./vendor/bin/sail artisan key:generate 
+```
+
 ## Build and Start the Docker Containers
 Once the dependencies are installed, start the Laravel Sail environment with the following command:
 
@@ -69,7 +78,7 @@ To stop the running containers, use the following command in a separate terminal
 There is a set of test data for this application. You can load it by running the following commans.
 
 ```
-./vendor/bin/sail db:seed
+./vendor/bin/sail artisan db:seed
 ```
 
 
