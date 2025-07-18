@@ -12,6 +12,10 @@ Route::get('/', function () {
 
 Route::resource('conversation', ConversationController::class);
 
+Route::get('/elderly-profiles', function () {
+    return Inertia::render('ElderlyProfiles');
+})->name('elderly-profiles');
+
 Route::get('dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
