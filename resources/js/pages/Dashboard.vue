@@ -55,24 +55,32 @@ const stats = [
         value: 14,
         change: -10.6,
         icon: 'users',
+        iconBg: 'bg-green-100',
+        iconColor: 'text-green-600',
     },
     {
         title: 'Total Calls',
         value: 22,
         change: 27.5,
         icon: 'phone',
+        iconBg: 'bg-green-100',
+        iconColor: 'text-green-600',
     },
     {
         title: 'Minutes Used',
         value: 16,
         change: -1.6,
         icon: 'clock',
+        iconBg: 'bg-green-100',
+        iconColor: 'text-green-600',
     },
     {
         title: 'Credits Remaining',
         value: 20,
         change: 12.3,
         icon: 'wallet',
+        iconBg: 'bg-green-100',
+        iconColor: 'text-green-600',
     },
 ];
 
@@ -91,7 +99,7 @@ const baseWheelConfig = {
     style: {
         fontFamily: 'inherit',
         chart: {
-            backgroundColor: '#ffffffff',
+            backgroundColor: 'false',
             color: '#1A1A1Aff',
             animation: {
                 use: true,
@@ -184,7 +192,7 @@ const tiremarksConfig = ref({
     style: {
         fontFamily: 'inherit',
         chart: {
-            backgroundColor: '#FFFFFFff',
+            backgroundColor: 'false',
             color: '#1A1A1Aff',
             animation: {
                 use: true,
@@ -279,35 +287,45 @@ const tiremarksConfig = ref({
         </div>
         <div v-else-if="user" class="p-6">
             <h1 class="text-2xl font-bold mb-4">
-              Welcome, {{
+              Welcome, <span class="text-gray-500">{{
                 realtimeUser && realtimeUser.user_metadata?.display_name ||
                 realtimeUser && realtimeUser.user_metadata?.name ||
                 user?.user_metadata?.display_name ||
                 user?.user_metadata?.name ||
                 user?.email ||
                 'User'
-              }}!
+              }}!</span>
             </h1>
             <!-- Restored Dashboard UI -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <Card v-for="stat in stats" :key="stat.title">
-                    <CardHeader class="flex flex-row items-center justify-between pb-2">
-                        <CardTitle class="text-sm font-medium">{{ stat.title }}</CardTitle>
-                        <Icon :name="stat.icon" class="h-5 w-5 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div class="text-2xl font-bold">{{ stat.value }}</div>
-                        <div :class="{'text-green-600': stat.change > 0, 'text-red-600': stat.change < 0, 'text-muted-foreground': stat.change === 0 }" class="text-xs">
-                            {{ stat.change > 0 ? '+' : '' }}{{ stat.change }}%
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+                <Card v-for="stat in stats" :key="stat.title" class="h-auto flex flex-col justify-between p-4 min-h-20">
+                    <CardHeader class="flex flex-row items-start justify-between pb-0 px-0 mb-0">
+                        <div class="flex flex-col items-start flex-1">
+                          <CardTitle class="text-sm font-medium mb-0 leading-tight">{{ stat.title }}</CardTitle>
+                          <div class="text-2xl font-bold leading-tight mt-0 mb-0">{{ stat.value }}</div>
+                          <div class="flex items-center gap-1 mt-0 text-xs font-medium"
+                            :class="{
+                              'text-green-600': stat.change > 0,
+                              'text-red-600': stat.change < 0,
+                              'text-muted-foreground': stat.change === 0
+                            }">
+                            <span v-if="stat.change > 0">▲</span>
+                            <span v-else-if="stat.change < 0">▼</span>
+                            <span>{{ Math.abs(stat.change) }}%</span>
+                          </div>
                         </div>
-                    </CardContent>
+                        <div :class="['rounded-xl', stat.iconBg, 'p-1.5', 'flex', 'items-center', 'justify-center', 'ml-2']">
+                          <Icon :name="stat.icon" class="h-6 w-6" :class="stat.iconColor" />
+                        </div>
+                    </CardHeader>
                 </Card>
             </div>
+            <!-- Move heading above the flex row -->
             <div class="flex flex-row gap-6 mb-8">
                 <div class="w-[70%]">
-                    <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center justify-between mb-2">
                         <h2 class="text-lg font-semibold">Usage Overview</h2>
-                        <Link href="/elderly-profiles" class="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90">All Profiles</Link>
+                        <Link href="/elderly-profiles" class="px-6 py-1.5 bg-primary text-white rounded-full font-semibold hover:bg-primary/90 h-10 flex items-center">All Profiles</Link>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <Card v-for="profile in elderlyProfiles" :key="profile.name" class="flex flex-col items-center py-6">
@@ -319,7 +337,7 @@ const tiremarksConfig = ref({
                 <div class="w-[30%]">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Call Trends</CardTitle>
+                            <CardTitle>Subscription Overview</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <VueUiTiremarks :dataset="{ percentage: 100 }" :config="tiremarksConfig" />

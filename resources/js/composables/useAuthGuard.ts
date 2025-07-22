@@ -14,7 +14,7 @@ export function useAuthGuard() {
     }
     loading.value = false;
     if (!currentSession) {
-      window.location.href = '/';
+      window.location.href = '/login';
     }
   };
 

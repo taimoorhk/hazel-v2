@@ -17,13 +17,26 @@ const { isMobile, state } = useSidebar();
                 <DropdownMenuTrigger as-child>
                     <SidebarMenuButton size="lg" class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground flex items-center gap-2">
                         <template v-if="user">
-                            <img v-if="user.user_metadata?.avatar_url" :src="user.user_metadata.avatar_url" alt="avatar" class="w-8 h-8 rounded-full object-cover border border-neutral-200" />
-                            <div v-else class="w-8 h-8 rounded-full bg-neutral-200 flex items-center justify-center text-neutral-500 font-bold">
-                                {{ user.user_metadata?.display_name?.charAt(0) || (user.email ? user.email.charAt(0) : '?') }}
-                            </div>
-                            <span class="font-medium text-sm text-neutral-800 truncate max-w-[120px]">{{ user.user_metadata?.display_name || user.email || '' }}</span>
+                            <template v-if="state === 'collapsed'">
+                                <!-- Compact: Only avatar -->
+                                <img v-if="user.user_metadata?.avatar_url" :src="user.user_metadata.avatar_url" alt="avatar" class="w-8 h-8 rounded-full object-cover border border-neutral-200" />
+                                <div v-else class="w-8 h-8 rounded-full bg-neutral-200 flex items-center justify-center text-neutral-500 font-bold">
+                                    {{ user.user_metadata?.display_name?.charAt(0) || (user.email ? user.email.charAt(0) : '?') }}
+                                </div>
+                            </template>
+                            <template v-else>
+                                <!-- Expanded: Avatar + name + chevron -->
+                                <img v-if="user.user_metadata?.avatar_url" :src="user.user_metadata.avatar_url" alt="avatar" class="w-8 h-8 rounded-full object-cover border border-neutral-200" />
+                                <div v-else class="w-8 h-8 rounded-full bg-neutral-200 flex items-center justify-center text-neutral-500 font-bold">
+                                    {{ user.user_metadata?.display_name?.charAt(0) || (user.email ? user.email.charAt(0) : '?') }}
+                                </div>
+                                <span class="font-medium text-sm text-neutral-800 truncate max-w-[120px]">{{ user.user_metadata?.display_name || user.email || '' }}</span>
+                                <ChevronsUpDown class="ml-auto size-4" />
+                            </template>
                         </template>
-                        <ChevronsUpDown class="ml-auto size-4" />
+                        <template v-else>
+                            <!-- No user: show nothing -->
+                        </template>
                     </SidebarMenuButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
