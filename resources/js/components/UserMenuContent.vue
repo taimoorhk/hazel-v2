@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import UserInfo from '@/components/UserInfo.vue';
 import { DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import type { User } from '@/types';
-import { Link, router } from '@inertiajs/vue3';
+import { supabase } from '@/lib/supabaseClient';
 import { LogOut, Settings } from 'lucide-vue-next';
+import { Link } from '@inertiajs/vue3';
 
 interface Props {
-    user: User;
+    user: any;
 }
 
-const handleLogout = () => {
-    router.flushAll();
+const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = '/login';
 };
 
 defineProps<Props>();
@@ -24,18 +25,18 @@ defineProps<Props>();
     </DropdownMenuLabel>
     <DropdownMenuSeparator />
     <DropdownMenuGroup>
-        <DropdownMenuItem :as-child="true">
-            <Link class="block w-full" :href="route('profile.edit')" prefetch as="button">
+        <DropdownMenuItem as-child>
+            <Link href="/settings/profile" class="block w-full flex items-center">
                 <Settings class="mr-2 h-4 w-4" />
                 Settings
             </Link>
         </DropdownMenuItem>
     </DropdownMenuGroup>
     <DropdownMenuSeparator />
-    <DropdownMenuItem :as-child="true">
-        <Link class="block w-full" method="post" :href="route('logout')" @click="handleLogout" as="button">
+    <DropdownMenuItem as-child>
+        <button class="block w-full" @click="handleLogout">
             <LogOut class="mr-2 h-4 w-4" />
             Log out
-        </Link>
+        </button>
     </DropdownMenuItem>
 </template>

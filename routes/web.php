@@ -13,12 +13,20 @@ Route::get('/', function () {
 Route::resource('conversation', ConversationController::class);
 
 Route::get('/elderly-profiles', function () {
-    return Inertia::render('ElderlyProfiles');
-})->name('elderly-profiles');
+    return inertia('ElderlyProfiles');
+});
 
 Route::get('dashboard', function () {
     return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+})->name('dashboard');
+
+Route::get('/login', function () {
+    return Inertia::render('auth/Login');
+})->name('login');
+
+Route::get('/register', function () {
+    return Inertia::render('auth/Register');
+})->name('register');
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

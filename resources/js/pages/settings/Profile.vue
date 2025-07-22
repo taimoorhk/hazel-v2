@@ -1,108 +1,80 @@
 <script setup lang="ts">
-import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
-
-import DeleteUser from '@/components/DeleteUser.vue';
+import { ref, onMounted } from 'vue';
+import { supabase } from '@/lib/supabaseClient';
+import AppLayout from '@/layouts/AppLayout.vue';
+import SettingsLayout from '@/layouts/settings/Layout.vue';
 import HeadingSmall from '@/components/HeadingSmall.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import AppLayout from '@/layouts/AppLayout.vue';
-import SettingsLayout from '@/layouts/settings/Layout.vue';
-import { type BreadcrumbItem, type User } from '@/types';
 
-interface Props {
-    mustVerifyEmail: boolean;
-    status?: string;
+interface SupabaseUser {
+  id: string;
+  email: string;
+  user_metadata?: { name?: string; display_name?: string };
 }
 
-defineProps<Props>();
+const user = ref<SupabaseUser | null>(null);
+const form = ref<{ name: string; email: string }>({ name: '', email: '' });
+const errorMsg = ref('');
+const successMsg = ref('');
 
-const breadcrumbItems: BreadcrumbItem[] = [
-    {
-        title: 'Profile settings',
-        href: '/settings/profile',
-    },
-];
+const fetchUser = async () => {
+  const { data } = await supabase.auth.getUser();
+  user.value = data.user as SupabaseUser;
+  form.value.name = data.user?.user_metadata?.display_name || data.user?.user_metadata?.name || '';
+  form.value.email = data.user?.email || '';
+};
 
-const page = usePage();
-const user = page.props.auth.user as User;
+onMounted(fetchUser);
 
-const form = useForm({
-    name: user.name,
-    email: user.email,
-});
-
-const submit = () => {
-    form.patch(route('profile.update'), {
-        preserveScroll: true,
-    });
+const submit = async () => {
+  errorMsg.value = '';
+  successMsg.value = '';
+  const updates: any = {};
+  // Always update display_name in user_metadata
+  if (form.value.name !== user.value?.user_metadata?.display_name) {
+    updates.data = { display_name: form.value.name };
+  }
+  if (form.value.email !== user.value?.email) {
+    updates.email = form.value.email;
+  }
+  if (Object.keys(updates).length === 0) {
+    successMsg.value = 'No changes to update.';
+    return;
+  }
+  const { error } = await supabase.auth.updateUser(updates);
+  if (error) {
+    errorMsg.value = error.message;
+  } else {
+    successMsg.value = 'Profile updated successfully!';
+    await fetchUser(); // Refresh user data after update
+  }
 };
 </script>
 
 <template>
-    <AppLayout :breadcrumbs="breadcrumbItems">
-        <Head title="Profile settings" />
-
-        <SettingsLayout>
-            <div class="flex flex-col space-y-6">
-                <HeadingSmall title="Profile information" description="Update your name and email address" />
-
-                <form @submit.prevent="submit" class="space-y-6">
-                    <div class="grid gap-2">
-                        <Label for="name">Name</Label>
-                        <Input id="name" class="mt-1 block w-full" v-model="form.name" required autocomplete="name" placeholder="Full name" />
-                        <InputError class="mt-2" :message="form.errors.name" />
-                    </div>
-
-                    <div class="grid gap-2">
-                        <Label for="email">Email address</Label>
-                        <Input
-                            id="email"
-                            type="email"
-                            class="mt-1 block w-full"
-                            v-model="form.email"
-                            required
-                            autocomplete="username"
-                            placeholder="Email address"
-                        />
-                        <InputError class="mt-2" :message="form.errors.email" />
-                    </div>
-
-                    <div v-if="mustVerifyEmail && !user.email_verified_at">
-                        <p class="-mt-4 text-sm text-muted-foreground">
-                            Your email address is unverified.
-                            <Link
-                                :href="route('verification.send')"
-                                method="post"
-                                as="button"
-                                class="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"
-                            >
-                                Click here to resend the verification email.
-                            </Link>
-                        </p>
-
-                        <div v-if="status === 'verification-link-sent'" class="mt-2 text-sm font-medium text-green-600">
-                            A new verification link has been sent to your email address.
-                        </div>
-                    </div>
-
-                    <div class="flex items-center gap-4">
-                        <Button :disabled="form.processing">Save</Button>
-
-                        <Transition
-                            enter-active-class="transition ease-in-out"
-                            enter-from-class="opacity-0"
-                            leave-active-class="transition ease-in-out"
-                            leave-to-class="opacity-0"
-                        >
-                            <p v-show="form.recentlySuccessful" class="text-sm text-neutral-600">Saved.</p>
-                        </Transition>
-                    </div>
-                </form>
-            </div>
-
-            <DeleteUser />
-        </SettingsLayout>
-    </AppLayout>
+  <AppLayout>
+    <SettingsLayout>
+      <div class="flex flex-col space-y-6 max-w-lg mx-auto mt-8">
+        <HeadingSmall title="Profile information" description="Update your name and email address" />
+        <form @submit.prevent="submit" class="space-y-6">
+          <div class="grid gap-2">
+            <Label for="name">Name</Label>
+            <Input id="name" class="mt-1 block w-full" v-model="form.name" required autocomplete="name" placeholder="Full name" />
+          </div>
+          <div class="grid gap-2">
+            <Label for="email">Email address</Label>
+            <Input id="email" type="email" class="mt-1 block w-full" v-model="form.email" required autocomplete="username" placeholder="Email address" />
+          </div>
+          <InputError v-if="errorMsg" :message="errorMsg" />
+          <div class="flex items-center gap-4">
+            <Button type="submit">Save</Button>
+            <span v-if="successMsg" class="text-green-600">{{ successMsg }}</span>
+          </div>
+        </form>
+      </div>
+    </SettingsLayout>
+  </AppLayout>
 </template>
