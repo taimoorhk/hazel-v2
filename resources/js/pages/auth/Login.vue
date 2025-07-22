@@ -9,7 +9,8 @@ import AuthBase from '@/layouts/AuthLayout.vue';
 import { Head } from '@inertiajs/vue3';
 import { LoaderCircle } from 'lucide-vue-next';
 import { ref, onMounted } from 'vue';
-import { supabase } from '@/lib';
+import { supabase } from '@/lib/supabaseClient';
+import { useSupabaseUser } from '@/composables/useSupabaseUser';
 
 const form = ref({
     email: '',
@@ -19,36 +20,43 @@ const form = ref({
 const errorMsg = ref('');
 const loading = ref(false);
 
-onMounted(async () => {
-    const { data } = await supabase.auth.getSession();
-    if (data.session && data.session.user) {
-        window.location.href = '/dashboard';
-    }
-});
 
 const submit = async () => {
     loading.value = true;
     errorMsg.value = '';
-    if (!form.value.email || !form.value.password) {
-        errorMsg.value = 'Email and password are required.';
-        loading.value = false;
-        return;
-    }
-    const { data, error } = await supabase.auth.signInWithPassword({
-        email: form.value.email,
-        password: form.value.password,
-    });
-    loading.value = false;
-    if (error) {
-        errorMsg.value = error.message;
-    } else if (data && data.user) {
-        if (data.user.email_confirmed_at) {
-            window.location.href = '/dashboard';
-        } else {
-            errorMsg.value = 'Please verify your email before logging in.';
+    try {
+        if (!form.value.email || !form.value.password) {
+            errorMsg.value = 'Email and password are required.';
+            loading.value = false;
+            return;
         }
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: form.value.email,
+            password: form.value.password,
+        });
+        loading.value = false;
+        if (error) {
+            errorMsg.value = error.message;
+        } else if (data && data.user) {
+            if (data.user.email_confirmed_at) {
+                window.location.href = '/dashboard';
+            } else {
+                errorMsg.value = 'Please verify your email before logging in.';
+            }
+        }
+    } catch (e) {
+        errorMsg.value = 'Network error: Unable to reach authentication server.';
+        loading.value = false;
     }
 };
+
+const { user, session } = useSupabaseUser();
+
+onMounted(() => {
+  if (session && session.value) {
+    window.location.href = '/dashboard';
+  }
+});
 </script>
 
 <template>

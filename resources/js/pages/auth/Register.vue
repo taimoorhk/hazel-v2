@@ -8,7 +8,7 @@ import AuthBase from '@/layouts/AuthLayout.vue';
 import { Head } from '@inertiajs/vue3';
 import { LoaderCircle } from 'lucide-vue-next';
 import { ref, onMounted } from 'vue';
-import { supabase } from '@/lib';
+import { supabase } from '@/lib/supabaseClient';
 import { useSupabaseUser } from '@/composables/useSupabaseUser';
 
 const form = ref({
@@ -20,11 +20,13 @@ const form = ref({
 const errorMsg = ref('');
 const loading = ref(false);
 const successMsg = ref('');
+const debugInfo = ref('');
 
 const { user } = useSupabaseUser();
 
 onMounted(async () => {
-    const { data } = await supabase.auth.getSession();
+    const { data, error } = await supabase.auth.getSession();
+    debugInfo.value = `Session: ${JSON.stringify(data.session)}, Error: ${error}`;
     if (data.session) {
         window.location.href = '/dashboard';
     }
@@ -34,31 +36,40 @@ const submit = async () => {
     loading.value = true;
     errorMsg.value = '';
     successMsg.value = '';
-    if (!form.value.name || !form.value.email || !form.value.password || !form.value.password_confirmation) {
-        errorMsg.value = 'All fields are required.';
+    try {
+        if (!form.value.name || !form.value.email || !form.value.password || !form.value.password_confirmation) {
+            errorMsg.value = 'All fields are required.';
+            loading.value = false;
+            return;
+        }
+        if (form.value.password !== form.value.password_confirmation) {
+            errorMsg.value = 'Passwords do not match.';
+            loading.value = false;
+            return;
+        }
+        const { data, error } = await supabase.auth.signUp({
+            email: form.value.email,
+            password: form.value.password,
+            options: {
+                data: {
+                  name: form.value.name,
+                  display_name: form.value.name,
+                  // Add more fields here if you add more to the form in the future
+                },
+            },
+        });
         loading.value = false;
-        return;
-    }
-    if (form.value.password !== form.value.password_confirmation) {
-        errorMsg.value = 'Passwords do not match.';
+        if (error) {
+            errorMsg.value = error.message;
+        } else if (data && data.user && !data.session) {
+            // User created, but email verification required
+            successMsg.value = 'Check your email for a verification link.';
+        } else if (data && data.user) {
+            window.location.href = '/dashboard';
+        }
+    } catch (e) {
+        errorMsg.value = 'Network error: Unable to reach authentication server.';
         loading.value = false;
-        return;
-    }
-    const { data, error } = await supabase.auth.signUp({
-        email: form.value.email,
-        password: form.value.password,
-        options: {
-            data: { name: form.value.name },
-        },
-    });
-    loading.value = false;
-    if (error) {
-        errorMsg.value = error.message;
-    } else if (data && data.user && !data.session) {
-        // User created, but email verification required
-        successMsg.value = 'Check your email for a verification link.';
-    } else if (data && data.user) {
-        window.location.href = '/dashboard';
     }
 };
 </script>
@@ -95,5 +106,6 @@ const submit = async () => {
             <TextLink href="/login">Already have an account? Login</TextLink>
         </div>
         <div v-if="successMsg" class="mt-4 text-green-600 text-center">{{ successMsg }}</div>
+        <div class="mt-4 text-xs text-gray-400">Debug: {{ debugInfo }}</div>
     </AuthBase>
 </template>

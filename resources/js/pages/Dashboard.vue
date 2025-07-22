@@ -6,12 +6,34 @@ import { Card, CardHeader, CardTitle, CardContent, CardAction } from '@/componen
 import Icon from '@/components/Icon.vue';
 import { VueUiWheel } from 'vue-data-ui';
 import { VueUiTiremarks } from 'vue-data-ui';
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useAuthGuard } from '@/composables/useAuthGuard';
 import { useSupabaseUser } from '@/composables/useSupabaseUser';
 import { Link } from '@inertiajs/vue3';
-useAuthGuard();
-const { user } = useSupabaseUser();
+import { supabase } from '@/lib/supabaseClient';
+import type { User } from '@supabase/supabase-js';
+
+const { loading } = useAuthGuard();
+const { user, session } = useSupabaseUser();
+
+// Add a ref for the latest user details
+const realtimeUser = ref<User | null>(null);
+
+onMounted(async () => {
+  if (session && session.value) {
+    // Fetch the latest user details from Supabase
+    const { data, error } = await supabase.auth.getUser();
+    if (data && data.user) {
+      realtimeUser.value = data.user;
+    }
+    // Listen for user changes in realtime
+    supabase.auth.onAuthStateChange((_event, newSession) => {
+      if (newSession && newSession.user) {
+        realtimeUser.value = newSession.user;
+      }
+    });
+  }
+});
 
 function getRandomScore() {
   return Math.floor(Math.random() * 81) + 10; // 10-90 for visible movement
@@ -252,9 +274,20 @@ const tiremarksConfig = ref({
 <template>
     <AppLayout>
         <Head title="Dashboard" />
-        <!-- Removed debug output -->
-        <div v-if="user" class="p-6">
-            <h1 class="text-2xl font-bold mb-4">Welcome, {{ user?.user_metadata?.name || user?.email || 'User' }}!</h1>
+        <div v-if="loading" class="flex items-center justify-center h-96">
+            <span class="text-lg text-gray-500">Loading session...</span>
+        </div>
+        <div v-else-if="user" class="p-6">
+            <h1 class="text-2xl font-bold mb-4">
+              Welcome, {{
+                realtimeUser && realtimeUser.user_metadata?.display_name ||
+                realtimeUser && realtimeUser.user_metadata?.name ||
+                user?.user_metadata?.display_name ||
+                user?.user_metadata?.name ||
+                user?.email ||
+                'User'
+              }}!
+            </h1>
             <!-- Restored Dashboard UI -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <Card v-for="stat in stats" :key="stat.title">
@@ -279,7 +312,7 @@ const tiremarksConfig = ref({
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <Card v-for="profile in elderlyProfiles" :key="profile.name" class="flex flex-col items-center py-6">
                             <span class="mb-2 font-medium">{{ profile.name }}</span>
-                            <VueUiWheel :dataset="{ value: profile.score, label: profile.name, percentage: profile.score }" :config="baseWheelConfig" />
+                            <VueUiWheel :dataset="{ percentage: profile.score }" :config="baseWheelConfig" />
                         </Card>
                     </div>
                 </div>
@@ -289,7 +322,7 @@ const tiremarksConfig = ref({
                             <CardTitle>Call Trends</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <VueUiTiremarks :dataset="{ value: stats[1].value, label: stats[1].title, percentage: 100 }" :config="tiremarksConfig" />
+                            <VueUiTiremarks :dataset="{ percentage: 100 }" :config="tiremarksConfig" />
                         </CardContent>
                     </Card>
                 </div>
