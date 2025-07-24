@@ -22,7 +22,9 @@ class ConversationController extends Controller
      */
     public function create()
     {
-        //
+        if (!auth()->user()->isAdmin() && !auth()->user()->isOrganization()) {
+            abort(403, 'Unauthorized action.');
+        }
     }
 
     /**
@@ -30,7 +32,9 @@ class ConversationController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        if (!auth()->user()->isAdmin() && !auth()->user()->isOrganization()) {
+            abort(403, 'Unauthorized action.');
+        }
     }
 
     /**
@@ -46,7 +50,9 @@ class ConversationController extends Controller
      */
     public function edit(string $id)
     {
-        //
+        if (!auth()->user()->isAdmin() && !auth()->user()->isOrganization()) {
+            abort(403, 'Unauthorized action.');
+        }
     }
 
     /**
@@ -54,7 +60,9 @@ class ConversationController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        if (!auth()->user()->isAdmin() && !auth()->user()->isOrganization()) {
+            abort(403, 'Unauthorized action.');
+        }
     }
 
     /**
@@ -62,6 +70,8 @@ class ConversationController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        if (!auth()->user()->isAdmin() && !auth()->user()->isOrganization()) {
+            abort(403, 'Unauthorized action.');
+        }
     }
 }

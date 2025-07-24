@@ -30,6 +30,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'supabase_id',
     ];
 
     /**
@@ -77,5 +78,37 @@ class User extends Authenticatable
     public function currentAccount(): HasOne
     {
         return $this->hasOne(Account::class, 'current_account_id');
+    }
+
+    /**
+     * Check if the user has the Normal User role.
+     */
+    public function isNormalUser(): bool
+    {
+        return $this->roles->contains('name', 'Normal User');
+    }
+
+    /**
+     * Check if the user has the Caregiver role.
+     */
+    public function isCaregiver(): bool
+    {
+        return $this->roles->contains('name', 'Caregiver');
+    }
+
+    /**
+     * Check if the user has the Organization role.
+     */
+    public function isOrganization(): bool
+    {
+        return $this->roles->contains('name', 'Organization');
+    }
+
+    /**
+     * Check if the user has the Admin role.
+     */
+    public function isAdmin(): bool
+    {
+        return $this->roles->contains('name', 'Admin');
     }
 }

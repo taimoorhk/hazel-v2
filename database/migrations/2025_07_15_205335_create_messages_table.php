@@ -18,7 +18,7 @@ return new class extends Migration
             $table->dateTime('start_time')->nullable();
             $table->dateTime('end_time')->nullable();
             $table->integer('total_time_seconds')->nullable();
-            $table->integer('conversation_id');
+            $table->foreignId('conversation_id')->constrained('conversations')->onDelete('cascade');
             $table->timestamps();
         });
     }

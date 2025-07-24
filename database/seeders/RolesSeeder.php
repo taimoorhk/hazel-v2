@@ -14,11 +14,10 @@ class RolesSeeder extends Seeder
     public function run(): void
     {
         $roles = [
+            ['name' => 'Normal User'],
+            ['name' => 'Caregiver'],
+            ['name' => 'Organization'],
             ['name' => 'Admin'],
-            ['name' => 'Account Owner'],
-            ['name' => 'Account Billing'],
-            ['name' => 'Account Viewer'],
-            ['name' => 'Account User'],
         ];
 
         foreach ($roles as $role) {

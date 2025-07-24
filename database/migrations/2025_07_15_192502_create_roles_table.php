@@ -18,9 +18,10 @@ return new class extends Migration
         });
 
         Schema::create('user_roles', function (Blueprint $table) {
-            $table->integer('user_id');
-            $table->integer('role_id');
-            $table->integer('account_id');
+            $table->id();
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('role_id')->constrained('roles')->onDelete('cascade');
+            $table->foreignId('account_id')->constrained('accounts')->onDelete('cascade');
             $table->timestamps();
         });
     }

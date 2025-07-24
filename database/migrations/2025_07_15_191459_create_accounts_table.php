@@ -19,8 +19,9 @@ return new class extends Migration
         });
 
         Schema::create('account_user', function (Blueprint $table) {
-            $table->integer('account_id');
-            $table->integer('user_id');
+            $table->id();
+            $table->foreignId('account_id')->constrained('accounts')->onDelete('cascade');
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->softDeletes();
         });
     }

@@ -30,7 +30,7 @@ const profiles = [
     lastActivity: 'Long ago',
     lastActivityType: 'old',
     registered: '31 Dec 2025',
-    role: 'User',
+    role: 'Normal User',
   },
   {
     name: 'Michael Lee',
@@ -39,7 +39,7 @@ const profiles = [
     lastActivity: 'Recently',
     lastActivityType: 'recent',
     registered: '10 Jan 2025',
-    role: 'User',
+    role: 'Caregiver',
   },
   {
     name: 'Sarah Kim',
@@ -48,7 +48,7 @@ const profiles = [
     lastActivity: 'Long ago',
     lastActivityType: 'old',
     registered: '05 Feb 2025',
-    role: 'Admin',
+    role: 'Organization',
   },
   {
     name: 'David Brown',
@@ -57,7 +57,7 @@ const profiles = [
     lastActivity: 'Recently',
     lastActivityType: 'recent',
     registered: '20 Mar 2025',
-    role: 'User',
+    role: 'Normal User',
   },
   {
     name: 'Olivia Smith',
@@ -66,7 +66,7 @@ const profiles = [
     lastActivity: 'Long ago',
     lastActivityType: 'old',
     registered: '15 Nov 2025',
-    role: 'User',
+    role: 'Caregiver',
   },
 ];
 
@@ -88,7 +88,9 @@ const clearFilters = () => {
         <select v-model="roleFilter" class="rounded-full border border-black px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-black min-w-[110px] h-10">
           <option value="">User role</option>
           <option value="Admin">Admin</option>
-          <option value="User">User</option>
+          <option value="Normal User">Normal User</option>
+          <option value="Caregiver">Caregiver</option>
+          <option value="Organization">Organization</option>
         </select>
         <select v-model="registrationFilter" class="rounded-full border border-black px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-black min-w-[140px] h-10">
           <option value="">Date of registration</option>
@@ -142,7 +144,7 @@ const clearFilters = () => {
               <div>{{ profile.registered }}</div>
             </div>
             <div>
-              <span :class="['px-4 py-1 rounded-full text-xs font-medium', profile.role === 'Admin' ? 'bg-gradient-to-r from-black to-neutral-800 text-white' : 'bg-neutral-100 text-black']">
+              <span :class="['px-4 py-1 rounded-full text-xs font-medium', profile.role === 'Admin' ? 'bg-gradient-to-r from-black to-neutral-800 text-white' : profile.role === 'Organization' ? 'bg-blue-100 text-blue-800' : profile.role === 'Caregiver' ? 'bg-green-100 text-green-800' : 'bg-neutral-100 text-black']">
                 {{ profile.role }}
               </span>
             </div>

@@ -16,6 +16,7 @@ const form = ref({
     email: '',
     password: '',
     password_confirmation: '',
+    role: '',
 });
 const errorMsg = ref('');
 const loading = ref(false);
@@ -37,8 +38,8 @@ const submit = async () => {
     errorMsg.value = '';
     successMsg.value = '';
     try {
-        if (!form.value.name || !form.value.email || !form.value.password || !form.value.password_confirmation) {
-            errorMsg.value = 'All fields are required.';
+        if (!form.value.name || !form.value.email || !form.value.password || !form.value.password_confirmation || !form.value.role) {
+            errorMsg.value = 'All fields are required, including role.';
             loading.value = false;
             return;
         }
@@ -54,7 +55,7 @@ const submit = async () => {
                 data: {
                   name: form.value.name,
                   display_name: form.value.name,
-                  // Add more fields here if you add more to the form in the future
+                  role: form.value.role,
                 },
             },
         });
@@ -62,9 +63,31 @@ const submit = async () => {
         if (error) {
             errorMsg.value = error.message;
         } else if (data && data.user && !data.session) {
+            // Sync with backend
+            await fetch('/api/sync-supabase-user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: data.user.id,
+                    email: data.user.email,
+                    name: data.user.user_metadata?.name || '',
+                    role: data.user.user_metadata?.role || 'Normal User',
+                })
+            });
             // User created, but email verification required
             successMsg.value = 'Check your email for a verification link.';
         } else if (data && data.user) {
+            // Sync with backend
+            await fetch('/api/sync-supabase-user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: data.user.id,
+                    email: data.user.email,
+                    name: data.user.user_metadata?.name || '',
+                    role: data.user.user_metadata?.role || 'Normal User',
+                })
+            });
             window.location.href = '/dashboard';
         }
     } catch (e) {
@@ -88,6 +111,16 @@ const submit = async () => {
             <div>
                 <Label for="email">Email</Label>
                 <Input id="email" v-model="form.email" type="email" required />
+            </div>
+            <div>
+                <Label for="role">Role</Label>
+                <select id="role" v-model="form.role" required class="w-full rounded border border-gray-300 px-3 py-2">
+                    <option value="" disabled>Select a role</option>
+                    <option value="Normal User">Normal User</option>
+                    <option value="Caregiver">Caregiver</option>
+                    <option value="Organization">Organization</option>
+                    <option value="Admin">Admin</option>
+                </select>
             </div>
             <div>
                 <Label for="password">Password</Label>

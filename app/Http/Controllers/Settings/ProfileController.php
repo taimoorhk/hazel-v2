@@ -45,6 +45,9 @@ class ProfileController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        if (! $request->user()->isAdmin() && ! $request->user()->isOrganization()) {
+            abort(403, 'Unauthorized action.');
+        }
         $request->validate([
             'password' => ['required', 'current_password'],
         ]);

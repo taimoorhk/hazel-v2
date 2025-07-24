@@ -22,6 +22,9 @@ defineProps<Props>();
         <div class="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
             <UserInfo :user="user" :show-email="true" />
         </div>
+        <div class="px-1 pb-1 text-xs text-neutral-500">
+            Role: {{ user.user_metadata?.role || 'Unknown Role' }}
+        </div>
     </DropdownMenuLabel>
     <DropdownMenuSeparator />
     <DropdownMenuGroup>

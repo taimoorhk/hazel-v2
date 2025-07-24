@@ -38,6 +38,17 @@ const submit = async () => {
         if (error) {
             errorMsg.value = error.message;
         } else if (data && data.user) {
+            // Sync with backend
+            await fetch('/api/sync-supabase-user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: data.user.id,
+                    email: data.user.email,
+                    name: data.user.user_metadata?.name || '',
+                    role: data.user.user_metadata?.role || 'Normal User',
+                })
+            });
             if (data.user.email_confirmed_at) {
                 window.location.href = '/dashboard';
             } else {
