@@ -7,6 +7,8 @@ import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
 import { BookOpen, Folder, LayoutGrid, Users } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
+import { useSupabaseUser } from '@/composables/useSupabaseUser';
+import { computed } from 'vue';
 
 const mainNavItems: NavItem[] = [
     {
@@ -33,6 +35,15 @@ const footerNavItems: NavItem[] = [
         icon: BookOpen,
     },
 ];
+
+const { user } = useSupabaseUser();
+const filteredMainNavItems = computed(() => {
+  const meta = user.value?.user_metadata;
+  if (meta && meta.role === 'Normal User') {
+    return mainNavItems.filter(item => item.title !== 'Elderly Profiles');
+  }
+  return mainNavItems;
+});
 </script>
 
 <template>
@@ -50,7 +61,7 @@ const footerNavItems: NavItem[] = [
         </SidebarHeader>
 
         <SidebarContent>
-            <NavMain :items="mainNavItems" />
+            <NavMain :items="filteredMainNavItems" />
         </SidebarContent>
 
         <SidebarFooter>

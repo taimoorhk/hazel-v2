@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Http;
 
 class AuthController extends Controller
 {
@@ -35,6 +36,25 @@ class AuthController extends Controller
         $roleModel = Role::where('name', $role)->first();
         if ($roleModel && !$user->roles->contains($roleModel->id)) {
             $user->roles()->attach($roleModel->id, ['account_id' => 1]); // Adjust account_id as needed
+        }
+
+        // Always fetch the latest role from user_roles
+        $latestRole = $user->roles()->latest('user_roles.created_at')->first();
+        $latestRoleName = $latestRole ? $latestRole->name : $role;
+
+        // Update Supabase user metadata using Supabase Admin API
+        $supabaseApiKey = config('services.supabase.service_role_key');
+        $supabaseUrl = config('services.supabase.url');
+        if ($supabaseApiKey && $supabaseUrl && $user->supabase_id) {
+            Http::withHeaders([
+                'apikey' => $supabaseApiKey,
+                'Authorization' => 'Bearer ' . $supabaseApiKey,
+                'Content-Type' => 'application/json',
+            ])->patch("$supabaseUrl/auth/v1/admin/users/{$user->supabase_id}", [
+                'user_metadata' => [
+                    'role' => $latestRoleName,
+                ],
+            ]);
         }
 
         return response()->json(['success' => true]);

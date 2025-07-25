@@ -3,10 +3,17 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { Head } from '@inertiajs/vue3';
 import { useAuthGuard } from '@/composables/useAuthGuard';
 import { useSupabaseUser } from '@/composables/useSupabaseUser';
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
+import { router as inertiaRouter } from '@inertiajs/vue3';
 
 useAuthGuard();
 const { user } = useSupabaseUser();
+onMounted(() => {
+  const meta = user.value?.user_metadata;
+  if (meta && meta.role === 'Normal User') {
+    inertiaRouter.visit('/dashboard');
+  }
+});
 
 const search = ref('');
 const roleFilter = ref('');

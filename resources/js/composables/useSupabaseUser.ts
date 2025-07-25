@@ -1,4 +1,4 @@
-import { ref, provide, inject, Ref } from 'vue';
+import { ref, provide, inject, Ref, onMounted } from 'vue';
 import { supabase } from '@/lib/supabaseClient';
 import type { User, Session } from '@supabase/supabase-js';
 
@@ -15,6 +15,16 @@ export function provideSupabaseUser() {
   supabase.auth.onAuthStateChange((_event, newSession) => {
     user.value = newSession?.user || null;
     session.value = newSession || null;
+  });
+  // Poll for user updates every 10 seconds
+  let pollInterval: number | undefined;
+  onMounted(() => {
+    pollInterval = window.setInterval(async () => {
+      const { data } = await supabase.auth.getUser();
+      if (data && data.user) {
+        user.value = data.user;
+      }
+    }, 10000);
   });
   provide('supabaseUser', user);
   provide('supabaseSession', session);

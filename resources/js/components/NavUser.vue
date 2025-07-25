@@ -26,7 +26,6 @@ const { isMobile, state } = useSidebar();
                             </template>
                             <template v-else>
                                 <!-- Expanded: Avatar + name + chevron -->
-                                    {{ user.user_metadata?.display_name?.charAt(0) || (user.email ? user.email.charAt(0) : '?') }}
                             <img v-if="user.user_metadata?.avatar_url" :src="user.user_metadata.avatar_url" alt="avatar" class="w-8 h-8 rounded-full object-cover border border-neutral-200" />
                             <div v-else class="w-8 h-8 rounded-full bg-neutral-200 flex items-center justify-center text-neutral-500 font-bold">
                                 {{ user.user_metadata?.display_name?.charAt(0) || (user.email ? user.email.charAt(0) : '?') }}

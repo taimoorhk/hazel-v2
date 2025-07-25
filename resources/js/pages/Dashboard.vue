@@ -12,12 +12,17 @@ import { useSupabaseUser } from '@/composables/useSupabaseUser';
 import { Link } from '@inertiajs/vue3';
 import { supabase } from '@/lib/supabaseClient';
 import type { User } from '@supabase/supabase-js';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 const { loading } = useAuthGuard();
 const { user, session } = useSupabaseUser();
 
 // Add a ref for the latest user details
 const realtimeUser = ref<User | null>(null);
+const showRoleChangeDialog = ref(false);
+const roleChangeLoading = ref(false);
+const roleChangeError = ref('');
 
 onMounted(async () => {
   if (session && session.value) {
@@ -277,6 +282,108 @@ const tiremarksConfig = ref({
         }
     }
 });
+
+const onboardingQuestion = ref<string | null>(null);
+const onboardingInput = ref('');
+const onboardingLoading = ref(false);
+const onboardingFormLink = 'https://example.com/onboarding-form'; // Example form link
+
+let pollingInterval: number | null = null;
+
+async function openOnboardingForm() {
+  window.open(onboardingFormLink, '_blank');
+  // Start polling for onboarding_question update
+  pollingInterval = window.setInterval(async () => {
+    const { data } = await supabase.auth.getUser();
+    if (data && data.user) {
+      realtimeUser.value = data.user;
+      const meta = (data.user && data.user.user_metadata);
+      if (meta && meta.onboarding_question) {
+        if (pollingInterval) {
+          clearInterval(pollingInterval);
+          pollingInterval = null;
+        }
+      }
+    }
+  }, 2000); // Poll every 2 seconds
+}
+
+function isNormalUser() {
+  const meta = (realtimeUser.value && realtimeUser.value.user_metadata) || (user && user.value && user.value.user_metadata);
+  return meta && meta.role === 'Normal User';
+}
+
+function hasOnboardingQuestion() {
+  const meta = (realtimeUser.value && realtimeUser.value.user_metadata) || (user && user.value && user.value.user_metadata);
+  return !!(meta && meta.onboarding_question);
+}
+
+async function saveOnboardingQuestion() {
+  onboardingLoading.value = true;
+  const { error } = await supabase.auth.updateUser({
+    data: { onboarding_question: onboardingInput.value }
+  });
+  onboardingLoading.value = false;
+  if (!error) {
+    // Refresh user data
+    const { data } = await supabase.auth.getUser();
+    if (data && data.user) {
+      realtimeUser.value = data.user;
+      onboardingInput.value = '';
+    }
+  }
+}
+
+async function handleAddDetails() {
+  // Simulate user filling the form and returning with details
+  // In a real app, you would handle this via a callback or webhook
+  onboardingLoading.value = true;
+  // Example: set onboarding_question to a placeholder value
+  const { error } = await supabase.auth.updateUser({
+    data: { onboarding_question: 'Details submitted via form.' }
+  });
+  onboardingLoading.value = false;
+  if (!error) {
+    const { data } = await supabase.auth.getUser();
+    if (data && data.user) {
+      realtimeUser.value = data.user;
+    }
+  }
+}
+
+async function acceptRoleChange() {
+  roleChangeLoading.value = true;
+  roleChangeError.value = '';
+  // 1. Update Supabase Auth metadata
+  const { error } = await supabase.auth.updateUser({ data: { role: 'Caregiver' } });
+  if (!error) {
+    // 2. Sync backend
+    const userData = (await supabase.auth.getUser()).data.user;
+    if (userData) {
+      await fetch('/api/sync-supabase-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: userData.id,
+          email: userData.email,
+          name: userData.user_metadata?.name || '',
+          role: 'Caregiver',
+        })
+      });
+      // 3. Refresh user data and UI
+      const { data } = await supabase.auth.getUser();
+      if (data && data.user) {
+        realtimeUser.value = data.user;
+      }
+      showRoleChangeDialog.value = false;
+    } else {
+      roleChangeError.value = 'User not found.';
+    }
+  } else {
+    roleChangeError.value = error.message || 'Failed to update role.';
+  }
+  roleChangeLoading.value = false;
+}
 </script>
 
 <template>
@@ -286,64 +393,99 @@ const tiremarksConfig = ref({
             <span class="text-lg text-gray-500">Loading session...</span>
         </div>
         <div v-else-if="user" class="p-6">
-            <h1 class="text-2xl font-bold mb-4">
-              Welcome, <span class="text-gray-500">{{
-                realtimeUser && realtimeUser.user_metadata?.display_name ||
-                realtimeUser && realtimeUser.user_metadata?.name ||
-                user?.user_metadata?.display_name ||
-                user?.user_metadata?.name ||
-                user?.email ||
-                'User'
-              }}!</span>
+            <h1 class="text-2xl font-bold mb-4 flex items-center justify-between">
+              <span>
+                Welcome, <span class="text-gray-500">{{
+                  realtimeUser && realtimeUser.user_metadata?.display_name ||
+                  realtimeUser && realtimeUser.user_metadata?.name ||
+                  user?.user_metadata?.display_name ||
+                  user?.user_metadata?.name ||
+                  user?.email ||
+                  'User'
+                }}!</span>
+              </span>
+              <button v-if="isNormalUser()" @click="showRoleChangeDialog = true" class="ml-4 h-8 px-3 rounded-md bg-primary text-primary-foreground text-sm font-medium shadow-xs hover:bg-primary/90 transition-all">
+                Add More Profiles
+              </button>
             </h1>
-            <!-- Restored Dashboard UI -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
-                <Card v-for="stat in stats" :key="stat.title" class="h-auto flex flex-col justify-between p-4 min-h-20">
-                    <CardHeader class="flex flex-row items-start justify-between pb-0 px-0 mb-0">
-                        <div class="flex flex-col items-start flex-1">
-                          <CardTitle class="text-sm font-medium mb-0 leading-tight">{{ stat.title }}</CardTitle>
-                          <div class="text-2xl font-bold leading-tight mt-0 mb-0">{{ stat.value }}</div>
-                          <div class="flex items-center gap-1 mt-0 text-xs font-medium"
-                            :class="{
-                              'text-green-600': stat.change > 0,
-                              'text-red-600': stat.change < 0,
-                              'text-muted-foreground': stat.change === 0
-                            }">
-                            <span v-if="stat.change > 0">▲</span>
-                            <span v-else-if="stat.change < 0">▼</span>
-                            <span>{{ Math.abs(stat.change) }}%</span>
-                          </div>
-                        </div>
-                        <div :class="['rounded-xl', stat.iconBg, 'p-1.5', 'flex', 'items-center', 'justify-center', 'ml-2']">
-                          <Icon :name="stat.icon" class="h-6 w-6" :class="stat.iconColor" />
-                        </div>
-                    </CardHeader>
-                </Card>
+            <!-- Professional, accessible modal dialog -->
+            <div v-if="showRoleChangeDialog" class="fixed inset-0 flex items-center justify-center z-50 bg-black/30">
+              <div class="bg-white rounded shadow-lg p-8 w-full max-w-md">
+                <h2 class="text-lg font-semibold mb-4">Change Profile Role</h2>
+                <p class="mb-4">To add more profiles, your account role will be changed from <b>Normal User</b> to <b>Caregiver</b>.<br/>Do you accept this change?</p>
+                <div v-if="roleChangeError" class="text-red-600 mb-2">{{ roleChangeError }}</div>
+                <div class="flex justify-end gap-2">
+                  <button @click="showRoleChangeDialog = false" class="bg-gray-200 px-4 py-2 rounded text-sm">Cancel</button>
+                  <button :disabled="roleChangeLoading" @click="acceptRoleChange" class="bg-green-600 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-green-700">
+                    {{ roleChangeLoading ? 'Processing...' : 'Accept & Submit' }}
+                  </button>
+                </div>
+              </div>
             </div>
-            <!-- Move heading above the flex row -->
-            <div class="flex flex-row gap-6 mb-8">
+            <div v-if="isNormalUser() && !hasOnboardingQuestion()" class="mb-8">
+              <Card>
+                <CardContent class="flex flex-col md:flex-row items-center justify-between gap-4 py-4">
+                  <div class="flex-1 text-left">
+                    <p class="text-base font-semibold mb-1">Set up your calling profile</p>
+                    <p class="text-sm text-blue-800">To get started, please add your details using the form below. This helps us personalize your experience.</p>
+                  </div>
+                  <div class="flex items-center h-full">
+                    <Button :disabled="onboardingLoading" @click="openOnboardingForm" size="sm" variant="default">
+                      Add Details
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+            <div v-if="!isNormalUser() || hasOnboardingQuestion()">
+              <!-- Restored Dashboard UI -->
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+                <Card v-for="stat in stats" :key="stat.title" class="h-auto flex flex-col justify-between p-4 min-h-20">
+                  <CardHeader class="flex flex-row items-start justify-between pb-0 px-0 mb-0">
+                    <div class="flex flex-col items-start flex-1">
+                      <CardTitle class="text-sm font-medium mb-0 leading-tight">{{ stat.title }}</CardTitle>
+                      <div class="text-2xl font-bold leading-tight mt-0 mb-0">{{ stat.value }}</div>
+                      <div class="flex items-center gap-1 mt-0 text-xs font-medium"
+                        :class="{
+                          'text-green-600': stat.change > 0,
+                          'text-red-600': stat.change < 0,
+                          'text-muted-foreground': stat.change === 0
+                        }">
+                        <span v-if="stat.change > 0">▲</span>
+                        <span v-else-if="stat.change < 0">▼</span>
+                        <span>{{ Math.abs(stat.change) }}%</span>
+                      </div>
+                    </div>
+                    <div :class="['rounded-xl', stat.iconBg, 'p-1.5', 'flex', 'items-center', 'justify-center', 'ml-2']">
+                      <Icon :name="stat.icon" class="h-6 w-6" :class="stat.iconColor" />
+                    </div>
+                  </CardHeader>
+                </Card>
+              </div>
+              <div class="flex flex-row gap-6 mb-8">
                 <div class="w-[70%]">
-                    <div class="flex items-center justify-between mb-2">
-                        <h2 class="text-lg font-semibold">Usage Overview</h2>
-                        <Link href="/elderly-profiles" class="px-6 py-1.5 bg-primary text-white rounded-full font-semibold hover:bg-primary/90 h-10 flex items-center">All Profiles</Link>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <Card v-for="profile in elderlyProfiles" :key="profile.name" class="flex flex-col items-center py-6">
-                            <span class="mb-2 font-medium">{{ profile.name }}</span>
-                            <VueUiWheel :dataset="{ percentage: profile.score }" :config="baseWheelConfig" />
-                        </Card>
-                    </div>
+                  <div class="flex items-center justify-between mb-2">
+                    <h2 class="text-lg font-semibold">Usage Overview</h2>
+                    <Link href="/elderly-profiles" class="px-6 py-1.5 bg-primary text-white rounded-full font-semibold hover:bg-primary/90 h-10 flex items-center">All Profiles</Link>
+                  </div>
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <Card v-for="profile in elderlyProfiles" :key="profile.name" class="flex flex-col items-center py-6">
+                      <span class="mb-2 font-medium">{{ profile.name }}</span>
+                      <VueUiWheel :dataset="{ percentage: profile.score }" :config="baseWheelConfig" />
+                    </Card>
+                  </div>
                 </div>
                 <div class="w-[30%]">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Subscription Overview</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <VueUiTiremarks :dataset="{ percentage: 100 }" :config="tiremarksConfig" />
-                        </CardContent>
-                    </Card>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Subscription Overview</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <VueUiTiremarks :dataset="{ percentage: 100 }" :config="tiremarksConfig" />
+                    </CardContent>
+                  </Card>
                 </div>
+              </div>
             </div>
         </div>
         <div v-else class="flex items-center justify-center h-96">

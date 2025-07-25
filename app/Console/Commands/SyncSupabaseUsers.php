@@ -1,25 +1,23 @@
 <?php
 
-namespace Database\Seeders;
+namespace App\Console\Commands;
 
-use Carbon\Carbon;
-use App\Models\Account;
-use App\Models\Conversation;
-use App\Models\Message;
-use App\Models\Role;
-use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
+use App\Models\User;
+use App\Models\Role;
+use App\Models\Account;
+use Illuminate\Support\Facades\Hash;
 
-class UserSeeder extends Seeder
+class SyncSupabaseUsers extends Command
 {
-    /**
-     * Run the database seeds.
-     */
-    public function run(): void
+    protected $signature = 'sync:supabase-users';
+    protected $description = 'Sync all users and roles from Supabase auth.users to backend tables';
+
+    public function handle()
     {
+        $supabaseApiKey = config('services.supabase.service_role_key');
+        $supabaseUrl = config('services.supabase.url');
         $password = Hash::make('password');
         $roles = [
             'Normal User' => Role::where('name', 'Normal User')->first(),
@@ -27,17 +25,12 @@ class UserSeeder extends Seeder
             'Organization' => Role::where('name', 'Organization')->first(),
             'Admin' => Role::where('name', 'Admin')->first(),
         ];
-
         $accounts = [
             'Normal User' => Account::firstOrCreate(['name' => 'Normal User Account']),
             'Caregiver' => Account::firstOrCreate(['name' => 'Caregiver Account']),
             'Organization' => Account::firstOrCreate(['name' => 'Organization Account']),
             'Admin' => Account::firstOrCreate(['name' => 'Admin Account']),
         ];
-
-        // Fetch all users from Supabase auth.users
-        $supabaseApiKey = config('services.supabase.service_role_key');
-        $supabaseUrl = config('services.supabase.url');
         if ($supabaseApiKey && $supabaseUrl) {
             $response = Http::withHeaders([
                 'apikey' => $supabaseApiKey,
@@ -61,40 +54,22 @@ class UserSeeder extends Seeder
                 $user->roles()->syncWithoutDetaching([$role->id => ['account_id' => $account->id]]);
             }
         }
-
-        // Remove the demo user creation loop at the end of run(). Only sync real Supabase users.
-    }
-
-    public function createConvos(User $user, Account $account) 
-    {
-        $convos = [
-            'Example 1 - My day at the ball park',
-            'Example 2 - My grandson visted',
-            'Example 3 - My son call me today',
-            'Example 4 - I am lonely',
-            'Example 5 - I had a great day',
-        ];
-
-        foreach ($convos as $_convo) {
-            $now = Carbon::now();
-            $timeKeep = $now;
-
-            $convo = Conversation::create([
-                'name' => $_convo,
-                'start_time' => $timeKeep,
-                'end_time' => $timeKeep,
-                'total_time_seconds' => 0,
-                'account_id' => $account->id,
-                'user_id' => $user->id,
-            ]);
-
-            $messageCount = range(1, rand(3, 15));
-
-            foreach($messageCount as $count) {
-                $startTime = $timeKeep;
-                $endTime = 'time';
-
+        // After syncing from Supabase, also push any backend changes to Supabase auth.users
+        foreach (User::with('roles')->get() as $user) {
+            $latestRole = $user->roles()->latest('user_roles.created_at')->first();
+            $latestRoleName = $latestRole ? $latestRole->name : 'Normal User';
+            if ($supabaseApiKey && $supabaseUrl && $user->supabase_id) {
+                Http::withHeaders([
+                    'apikey' => $supabaseApiKey,
+                    'Authorization' => 'Bearer ' . $supabaseApiKey,
+                    'Content-Type' => 'application/json',
+                ])->patch("$supabaseUrl/auth/v1/admin/users/{$user->supabase_id}", [
+                    'user_metadata' => [
+                        'role' => $latestRoleName,
+                    ],
+                ]);
             }
         }
+        $this->info('Supabase users and roles synced to backend.');
     }
-}
+} 
