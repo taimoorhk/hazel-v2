@@ -39,6 +39,36 @@ The authentication system now handles users who exist in Laravel but don't have 
 - Users with existing Supabase IDs follow the normal authentication flow
 - Failed syncs are logged but don't prevent authentication
 
+## Real-time Sync System (NEW)
+
+The system now includes comprehensive real-time synchronization between Laravel and Supabase:
+
+### How Real-time Sync Works
+1. **Automatic Event Triggers**: Laravel automatically fires events when users are created, updated, or deleted
+2. **Immediate Sync**: The RealtimeSyncService immediately syncs changes to both Supabase Auth and public.users
+3. **Bidirectional Sync**: Changes in Supabase are also synced back to Laravel via real-time listeners
+4. **Database Triggers**: Supabase triggers automatically maintain consistency between auth.users and public.users
+
+### Real-time Sync Components
+- **RealtimeSyncService**: Handles immediate sync from Laravel to Supabase
+- **SupabaseRealtimeListener**: Listens for changes in Supabase and syncs to Laravel
+- **Laravel Events**: UserCreated, UserUpdated, UserDeleted events trigger automatic sync
+- **Database Triggers**: Supabase triggers maintain consistency between tables
+
+### Real-time Sync Flow
+```
+Laravel User Action → Laravel Event → RealtimeSyncService → Supabase Auth + public.users
+                                                                    ↓
+Supabase User Action → Database Trigger → public.users → SupabaseRealtimeListener → Laravel
+```
+
+### Benefits of Real-time Sync
+- ✅ **Instant Synchronization**: Changes are synced immediately
+- ✅ **Bidirectional**: Both Laravel and Supabase stay in sync
+- ✅ **Automatic**: No manual intervention required
+- ✅ **Reliable**: Error handling and logging for failed syncs
+- ✅ **Consistent**: Database triggers ensure data consistency
+
 ## Manual Sync Commands
 
 ### 1. List Users Missing Supabase IDs
@@ -65,7 +95,7 @@ php artisan supabase:add-id {email} {supabase_id}
 php artisan supabase:sync-user {email}
 ```
 
-### 5. Sync Existing Users with Supabase (NEW)
+### 5. Sync Existing Users with Supabase
 This command creates Supabase users for existing Laravel users who don't have Supabase IDs:
 ```bash
 # Sync all users without Supabase IDs
@@ -75,7 +105,33 @@ php artisan supabase:sync-existing-users
 php artisan supabase:sync-existing-users --email=user@example.com
 ```
 
-### 6. Dispatch Background Sync Job
+### 6. Comprehensive Sync (NEW)
+This command provides bidirectional sync between Laravel and Supabase (both auth.users and public.users):
+```bash
+# Bidirectional sync (Laravel ↔ Supabase)
+php artisan supabase:comprehensive-sync
+
+# Sync Laravel to Supabase only
+php artisan supabase:comprehensive-sync --direction=laravel-to-supabase
+
+# Sync Supabase to Laravel only
+php artisan supabase:comprehensive-sync --direction=supabase-to-laravel
+
+# Sync specific user
+php artisan supabase:comprehensive-sync --email=user@example.com
+```
+
+### 7. Real-time Sync (NEW)
+This command triggers immediate real-time sync between Laravel and Supabase:
+```bash
+# Sync specific user
+php artisan supabase:realtime-sync --email=user@example.com
+
+# Sync all users
+php artisan supabase:realtime-sync --all
+```
+
+### 8. Dispatch Background Sync Job
 ```bash
 php artisan supabase:dispatch-sync
 ```
@@ -118,6 +174,87 @@ Content-Type: application/json
 }
 ```
 
+### Sync User to Supabase (NEW)
+```http
+POST /api/sync-user-to-supabase
+Content-Type: application/json
+
+{
+    "email": "user@example.com"
+}
+```
+
+### Sync All Users to Supabase (NEW)
+```http
+POST /api/sync-all-users-to-supabase
+```
+
+### Sync All Users from Supabase (NEW)
+```http
+POST /api/sync-all-users-from-supabase
+```
+
+### Get Sync Status (NEW)
+```http
+GET /api/sync-status
+```
+
+Response:
+```json
+{
+    "total_laravel_users": 10,
+    "users_with_supabase_id": 8,
+    "users_without_supabase_id": 2,
+    "sync_percentage": 80.0,
+    "users_needing_sync": [
+        {
+            "id": 1,
+            "name": "User Name",
+            "email": "user@example.com"
+        }
+    ]
+}
+```
+
+### Real-time Sync User (NEW)
+```http
+POST /api/realtime-sync-user
+Content-Type: application/json
+
+{
+    "email": "user@example.com"
+}
+```
+
+### Real-time Sync All Users (NEW)
+```http
+POST /api/realtime-sync-all
+```
+
+## Supabase Database Structure
+
+The system now syncs users to both Supabase Auth (`auth.users`) and a custom `public.users` table:
+
+### Auth Users Table (`auth.users`)
+- Managed by Supabase Auth
+- Contains authentication data
+- Automatically synced via triggers
+
+### Public Users Table (`public.users`)
+- Mirrors Laravel users table structure
+- Contains application-specific user data
+- Automatically synced via triggers when auth.users changes
+
+### Database Triggers
+The system includes automatic triggers that:
+1. **Create** users in `public.users` when new users are added to `auth.users`
+2. **Update** users in `public.users` when `auth.users` records are modified
+3. **Maintain** data consistency between both tables
+
+### Row Level Security (RLS)
+- Users can only view/update their own data
+- Service role has full access for sync operations
+
 ## Configuration
 
 ### Environment Variables
@@ -130,6 +267,13 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
 ### Service Configuration
 The Supabase configuration is already set up in `config/services.php`.
+
+### Database Migration
+Run the Supabase migration to create the users table and triggers:
+```bash
+# Apply the migration in your Supabase project
+# The migration file is located at: supabase/migrations/20250725183410_add_onboarding_question_to_user_metadata.sql
+```
 
 ## Troubleshooting
 

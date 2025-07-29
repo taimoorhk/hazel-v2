@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Notifications\Notifiable;
+use App\Events\UserCreated;
+use App\Events\UserUpdated;
+use App\Events\UserDeleted;
 
 class User extends Authenticatable
 {
@@ -56,6 +59,17 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    /**
+     * The event map for the model.
+     *
+     * @var array
+     */
+    protected $dispatchesEvents = [
+        'created' => UserCreated::class,
+        'updated' => UserUpdated::class,
+        'deleted' => UserDeleted::class,
+    ];
 
     /**
      * The roles that belong to the user.

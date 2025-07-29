@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\User;
+use App\Services\SupabaseSyncService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -82,45 +83,13 @@ class SyncExistingUsers extends Command
     private function syncUser($user, $supabaseApiKey, $supabaseUrl)
     {
         try {
-            // Get user's role
-            $role = $user->roles->first();
-            $roleName = $role ? $role->name : 'Normal User';
+            $syncService = new SupabaseSyncService();
+            $result = $syncService->syncLaravelUserToSupabase($user);
             
-            // Create user in Supabase
-            $response = Http::withHeaders([
-                'apikey' => $supabaseApiKey,
-                'Authorization' => 'Bearer ' . $supabaseApiKey,
-                'Content-Type' => 'application/json',
-            ])->post("$supabaseUrl/auth/v1/admin/users", [
-                'email' => $user->email,
-                'email_confirm' => true,
-                'user_metadata' => [
-                    'name' => $user->name,
-                    'display_name' => $user->name,
-                    'role' => $roleName,
-                    'user_questions' => $user->user_questions,
-                ],
-                'app_metadata' => [
-                    'role' => $roleName,
-                ],
-            ]);
-            
-            if ($response->successful()) {
-                $supabaseUser = $response->json();
-                $user->update(['supabase_id' => $supabaseUser['id']]);
-                
-                Log::info('User synced with Supabase', [
-                    'email' => $user->email,
-                    'supabase_id' => $supabaseUser['id']
-                ]);
-                
-                $this->line(" ✓ {$user->email} -> {$supabaseUser['id']}");
+            if ($result['success']) {
+                $this->line(" ✓ {$user->email} -> {$result['supabase_id']} (Auth: OK, Public: OK)");
             } else {
-                $this->line(" ✗ {$user->email} -> Failed: " . $response->body());
-                Log::error('Failed to sync user with Supabase', [
-                    'email' => $user->email,
-                    'response' => $response->body()
-                ]);
+                $this->line(" ✗ {$user->email} -> {$result['message']}");
             }
         } catch (\Exception $e) {
             $this->line(" ✗ {$user->email} -> Error: " . $e->getMessage());

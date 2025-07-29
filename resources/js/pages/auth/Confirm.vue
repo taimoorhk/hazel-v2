@@ -67,11 +67,53 @@ const confirmMagicLink = async () => {
                 } else {
                     const createError = await createResponse.text();
                     console.error('User sync failed:', createError);
-                    // Continue anyway as the user is authenticated
+                    
+                    // Try alternative sync method if the first one fails
+                    try {
+                        console.log('Attempting alternative sync method...');
+                        const syncResponse = await fetch('/api/sync-from-supabase-to-laravel', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                email: data.user.email
+                            })
+                        });
+                        
+                        if (syncResponse.ok) {
+                            const syncResult = await syncResponse.json();
+                            console.log('Alternative sync successful:', syncResult);
+                        } else {
+                            const syncError = await syncResponse.text();
+                            console.error('Alternative sync also failed:', syncError);
+                        }
+                    } catch (syncError) {
+                        console.error('Alternative sync error:', syncError);
+                    }
                 }
             } catch (createError) {
                 console.error('User sync error:', createError);
-                // Continue anyway as the user is authenticated
+                
+                // Try alternative sync method if the first one fails
+                try {
+                    console.log('Attempting alternative sync method after error...');
+                    const syncResponse = await fetch('/api/sync-from-supabase-to-laravel', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            email: data.user.email
+                        })
+                    });
+                    
+                    if (syncResponse.ok) {
+                        const syncResult = await syncResponse.json();
+                        console.log('Alternative sync successful:', syncResult);
+                    } else {
+                        const syncError = await syncResponse.text();
+                        console.error('Alternative sync also failed:', syncError);
+                    }
+                } catch (syncError) {
+                    console.error('Alternative sync error:', syncError);
+                }
             }
 
             successMsg.value = 'Email confirmed successfully!';

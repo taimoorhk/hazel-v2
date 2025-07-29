@@ -386,6 +386,50 @@ async function checkUserQuestionsFromBackend() {
         userQuestionsLoaded.value = true;
         
         return result.has_questions;
+      } else if (response.status === 404) {
+        // User not found in Laravel, try to sync from Supabase
+        console.log('User not found in Laravel, attempting to sync from Supabase...');
+        try {
+          const syncResponse = await fetch('/api/sync-from-supabase-to-laravel', {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+              email: data.user.email
+            })
+          });
+          
+          if (syncResponse.ok) {
+            const syncResult = await syncResponse.json();
+            console.log('User synced successfully:', syncResult);
+            
+            // Retry the check after sync
+            const retryResponse = await fetch('/api/check-user-questions', {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+              },
+              body: JSON.stringify({
+                email: data.user.email
+              })
+            });
+            
+            if (retryResponse.ok) {
+              const retryResult = await retryResponse.json();
+              userQuestions.value = retryResult.user_questions;
+              userRole.value = retryResult.role;
+              userQuestionsLoaded.value = true;
+              return retryResult.has_questions;
+            }
+          } else {
+            console.error('Sync failed:', syncResponse.status, syncResponse.statusText);
+          }
+        } catch (syncError) {
+          console.error('Sync error:', syncError);
+        }
       } else {
         console.error('API response not ok:', response.status, response.statusText);
       }

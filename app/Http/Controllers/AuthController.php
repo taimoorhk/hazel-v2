@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Role;
+use App\Services\SupabaseSyncService;
+use App\Services\RealtimeSyncService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Http;
@@ -235,6 +237,14 @@ class AuthController extends Controller
                 \Log::info('Assigned role to user', ['email' => $email, 'role' => $role]);
             }
 
+            // Real-time sync to Supabase
+            $realtimeSync = new RealtimeSyncService();
+            $syncResult = $realtimeSync->syncUserToSupabase($user, 'created');
+            \Log::info('User real-time synced to Supabase after creation', [
+                'email' => $email,
+                'sync_result' => $syncResult
+            ]);
+
             \Log::info('createUserFromSupabase completed successfully', ['email' => $email]);
             return response()->json([
                 'success' => true, 
@@ -394,5 +404,425 @@ class AuthController extends Controller
         \Log::info('checkUserQuestions result', $result);
         
         return response()->json($result);
+    }
+
+    /**
+     * Sync Laravel user to Supabase (both auth.users and public.users)
+     */
+    public function syncUserToSupabase(Request $request)
+    {
+        try {
+            $email = $request->input('email');
+            
+            if (!$email) {
+                return response()->json(['error' => 'Email is required'], 400);
+            }
+
+            $user = User::where('email', $email)->first();
+            if (!$user) {
+                return response()->json(['error' => 'User not found'], 404);
+            }
+
+            $syncService = new SupabaseSyncService();
+            $result = $syncService->syncLaravelUserToSupabase($user);
+
+            return response()->json($result);
+
+        } catch (\Exception $e) {
+            \Log::error('syncUserToSupabase failed', [
+                'email' => $email ?? 'unknown',
+                'error' => $e->getMessage()
+            ]);
+            return response()->json(['error' => 'Internal server error'], 500);
+        }
+    }
+
+    /**
+     * Sync all Laravel users to Supabase
+     */
+    public function syncAllUsersToSupabase(Request $request)
+    {
+        try {
+            $syncService = new SupabaseSyncService();
+            $result = $syncService->syncAllLaravelUsersToSupabase();
+
+            return response()->json($result);
+
+        } catch (\Exception $e) {
+            \Log::error('syncAllUsersToSupabase failed', [
+                'error' => $e->getMessage()
+            ]);
+            return response()->json(['error' => 'Internal server error'], 500);
+        }
+    }
+
+    /**
+     * Sync all Supabase users to Laravel
+     */
+    public function syncAllUsersFromSupabase(Request $request)
+    {
+        try {
+            $syncService = new SupabaseSyncService();
+            $result = $syncService->syncAllSupabaseUsersToLaravel();
+
+            return response()->json($result);
+
+        } catch (\Exception $e) {
+            \Log::error('syncAllUsersFromSupabase failed', [
+                'error' => $e->getMessage()
+            ]);
+            return response()->json(['error' => 'Internal server error'], 500);
+        }
+    }
+
+    /**
+     * Get sync status for all users
+     */
+    public function getSyncStatus(Request $request)
+    {
+        try {
+            $laravelUsers = User::all(['id', 'name', 'email', 'supabase_id']);
+            $usersWithSupabaseId = $laravelUsers->whereNotNull('supabase_id')->count();
+            $usersWithoutSupabaseId = $laravelUsers->whereNull('supabase_id')->count();
+
+            return response()->json([
+                'total_laravel_users' => $laravelUsers->count(),
+                'users_with_supabase_id' => $usersWithSupabaseId,
+                'users_without_supabase_id' => $usersWithoutSupabaseId,
+                'sync_percentage' => $laravelUsers->count() > 0 ? 
+                    round(($usersWithSupabaseId / $laravelUsers->count()) * 100, 2) : 0,
+                'users_needing_sync' => $laravelUsers->whereNull('supabase_id')
+                    ->map(function($user) {
+                        return [
+                            'id' => $user->id,
+                            'name' => $user->name,
+                            'email' => $user->email
+                        ];
+                    })->values()
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('getSyncStatus failed', [
+                'error' => $e->getMessage()
+            ]);
+            return response()->json(['error' => 'Internal server error'], 500);
+        }
+    }
+
+    /**
+     * Real-time sync specific user
+     */
+    public function realtimeSyncUser(Request $request)
+    {
+        try {
+            $email = $request->input('email');
+            
+            if (!$email) {
+                return response()->json(['error' => 'Email is required'], 400);
+            }
+
+            $user = User::where('email', $email)->first();
+            if (!$user) {
+                return response()->json(['error' => 'User not found'], 404);
+            }
+
+            $realtimeSync = new RealtimeSyncService();
+            $result = $realtimeSync->syncUserToSupabase($user, 'api');
+
+            return response()->json($result);
+
+        } catch (\Exception $e) {
+            \Log::error('realtimeSyncUser failed', [
+                'email' => $email ?? 'unknown',
+                'error' => $e->getMessage()
+            ]);
+            return response()->json(['error' => 'Internal server error'], 500);
+        }
+    }
+
+    /**
+     * Real-time sync all users
+     */
+    public function realtimeSyncAll(Request $request)
+    {
+        try {
+            $users = User::all();
+            $realtimeSync = new RealtimeSyncService();
+            
+            $results = [
+                'total' => $users->count(),
+                'successful' => 0,
+                'failed' => 0,
+                'details' => []
+            ];
+
+            foreach ($users as $user) {
+                $result = $realtimeSync->syncUserToSupabase($user, 'bulk');
+                $results['details'][] = [
+                    'email' => $user->email,
+                    'result' => $result
+                ];
+
+                if ($result['success']) {
+                    $results['successful']++;
+                } else {
+                    $results['failed']++;
+                }
+            }
+
+            return response()->json($results);
+
+        } catch (\Exception $e) {
+            \Log::error('realtimeSyncAll failed', [
+                'error' => $e->getMessage()
+            ]);
+            return response()->json(['error' => 'Internal server error'], 500);
+        }
+    }
+
+    /**
+     * Create a test user for real-time sync testing
+     */
+    public function createTestUser(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email|unique:users,email',
+            'name' => 'required|string|max:255',
+            'role' => 'required|string'
+        ]);
+
+        try {
+            // Create user in Laravel (this will trigger real-time sync)
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => bcrypt('password'), // Temporary password
+            ]);
+
+            // Assign role (skip for now due to account_id constraint)
+            // $role = Role::where('name', $request->role)->first();
+            // if ($role) {
+            //     $user->roles()->attach($role->id);
+            // }
+
+            \Log::info('Test user created for real-time sync testing', [
+                'email' => $request->email,
+                'name' => $request->name
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Test user created successfully',
+                'user' => $user
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to create test user', [
+                'email' => $request->email,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create test user: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Check if user exists in Supabase Auth
+     */
+    public function checkSupabaseUser(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email'
+        ]);
+
+        $supabaseUrl = config('services.supabase.url');
+        $supabaseServiceKey = config('services.supabase.service_role_key');
+
+        if (!$supabaseServiceKey) {
+            return response()->json([
+                'exists' => false,
+                'message' => 'Supabase service key not configured'
+            ]);
+        }
+
+        try {
+            $response = Http::withHeaders([
+                'apikey' => $supabaseServiceKey,
+                'Authorization' => 'Bearer ' . $supabaseServiceKey,
+            ])->get("{$supabaseUrl}/auth/v1/admin/users");
+
+            if ($response->successful()) {
+                $responseData = $response->json();
+                $users = $responseData['users'] ?? $responseData; // Handle both formats
+                $user = collect($users)->firstWhere('email', $request->email);
+                
+                return response()->json([
+                    'exists' => !is_null($user),
+                    'supabase_id' => $user['id'] ?? null,
+                    'user' => $user
+                ]);
+            }
+
+            return response()->json([
+                'exists' => false,
+                'message' => 'Failed to check Supabase user'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'exists' => false,
+                'message' => 'Error checking Supabase user: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Check if user exists in public.users table
+     */
+    public function checkPublicUsers(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email'
+        ]);
+
+        $supabaseUrl = config('services.supabase.url');
+        $supabaseServiceKey = config('services.supabase.service_role_key');
+
+        if (!$supabaseServiceKey) {
+            return response()->json([
+                'exists' => false,
+                'message' => 'Supabase service key not configured'
+            ]);
+        }
+
+        try {
+            $response = Http::withHeaders([
+                'apikey' => $supabaseServiceKey,
+                'Authorization' => 'Bearer ' . $supabaseServiceKey,
+            ])->get("{$supabaseUrl}/rest/v1/users", [
+                'select' => '*',
+                'email' => 'eq.' . $request->email
+            ]);
+
+            if ($response->successful()) {
+                $users = $response->json();
+                $user = !empty($users) ? $users[0] : null;
+                
+                return response()->json([
+                    'exists' => !is_null($user),
+                    'name' => $user['name'] ?? null,
+                    'email' => $user['email'] ?? null,
+                    'supabase_id' => $user['supabase_id'] ?? null,
+                    'user' => $user
+                ]);
+            }
+
+            return response()->json([
+                'exists' => false,
+                'message' => 'Failed to check public.users table'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'exists' => false,
+                'message' => 'Error checking public.users table: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Sync user from Supabase to Laravel (for users that exist in Supabase but not in Laravel)
+     */
+    public function syncFromSupabaseToLaravel(Request $request)
+    {
+        try {
+            $email = $request->input('email');
+            
+            if (!$email) {
+                return response()->json(['error' => 'Email is required'], 400);
+            }
+
+            \Log::info('syncFromSupabaseToLaravel called', ['email' => $email]);
+
+            // First check if user exists in Laravel
+            $laravelUser = User::where('email', $email)->first();
+            if ($laravelUser) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'User already exists in Laravel',
+                    'user_id' => $laravelUser->id
+                ]);
+            }
+
+            // Get user from Supabase Auth
+            $supabaseUrl = config('services.supabase.url');
+            $supabaseServiceKey = config('services.supabase.service_role_key');
+            
+            if (!$supabaseUrl || !$supabaseServiceKey) {
+                return response()->json(['error' => 'Supabase not configured'], 500);
+            }
+
+            // Get user from Supabase Auth
+            $response = Http::withHeaders([
+                'apikey' => $supabaseServiceKey,
+                'Authorization' => 'Bearer ' . $supabaseServiceKey,
+            ])->get("{$supabaseUrl}/auth/v1/admin/users");
+
+            if (!$response->successful()) {
+                return response()->json(['error' => 'Failed to get user from Supabase Auth'], 500);
+            }
+
+            $responseData = $response->json();
+            $supabaseUsers = $responseData['users'] ?? $responseData; // Handle both formats
+            
+            // Find user by email
+            $supabaseUser = collect($supabaseUsers)->firstWhere('email', $email);
+            if (!$supabaseUser) {
+                return response()->json(['error' => 'User not found in Supabase Auth'], 404);
+            }
+            
+            // Create user in Laravel
+            $user = User::create([
+                'name' => $supabaseUser['user_metadata']['name'] ?? 
+                         $supabaseUser['user_metadata']['display_name'] ?? 
+                         'User',
+                'email' => $email,
+                'password' => bcrypt(Str::random(32)),
+                'supabase_id' => $supabaseUser['id'],
+                'user_questions' => $supabaseUser['user_metadata']['user_questions'] ?? null,
+            ]);
+
+            // Assign default role
+            $roleName = $supabaseUser['user_metadata']['role'] ?? 'Normal User';
+            $role = Role::where('name', $roleName)->first();
+            if ($role) {
+                $user->roles()->attach($role->id, ['account_id' => 1]);
+            }
+
+            // Sync to Supabase public.users table
+            $realtimeSync = new RealtimeSyncService();
+            $syncResult = $realtimeSync->syncUserToSupabase($user, 'created');
+
+            \Log::info('User synced from Supabase to Laravel', [
+                'email' => $email,
+                'user_id' => $user->id,
+                'sync_result' => $syncResult
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User synced from Supabase to Laravel',
+                'user_id' => $user->id,
+                'sync_result' => $syncResult
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('syncFromSupabaseToLaravel failed', [
+                'email' => $email ?? 'unknown',
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['error' => 'Internal server error'], 500);
+        }
     }
 } 

@@ -13,6 +13,16 @@ Route::post('/check-user-questions', [AuthController::class, 'checkUserQuestions
 Route::post('/manual-sync-user', [AuthController::class, 'manualSyncUser']);
 Route::post('/create-user-from-supabase', [AuthController::class, 'createUserFromSupabase']);
 Route::post('/verify-user-exists', [AuthController::class, 'verifyUserExists']);
+Route::post('/sync-user-to-supabase', [AuthController::class, 'syncUserToSupabase']);
+Route::post('/sync-all-users-to-supabase', [AuthController::class, 'syncAllUsersToSupabase']);
+Route::post('/sync-all-users-from-supabase', [AuthController::class, 'syncAllUsersFromSupabase']);
+Route::get('/sync-status', [AuthController::class, 'getSyncStatus']);
+Route::post('/realtime-sync-user', [AuthController::class, 'realtimeSyncUser']);
+Route::post('/realtime-sync-all', [AuthController::class, 'realtimeSyncAll']);
+Route::post('/create-test-user', [AuthController::class, 'createTestUser']);
+Route::post('/check-supabase-user', [AuthController::class, 'checkSupabaseUser']);
+Route::post('/check-public-users', [AuthController::class, 'checkPublicUsers']);
+Route::post('/sync-from-supabase-to-laravel', [AuthController::class, 'syncFromSupabaseToLaravel']);
 Route::get('/test-auth-flow', function() {
     return response()->json([
         'message' => 'Auth flow test endpoint',

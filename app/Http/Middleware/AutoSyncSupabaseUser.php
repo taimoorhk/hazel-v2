@@ -35,6 +35,18 @@ class AutoSyncSupabaseUser
             }
         }
 
+        // Also check for Supabase session in cookies or headers
+        $supabaseSession = $request->cookie('sb-access-token') || $request->header('Authorization');
+        if ($supabaseSession && !$request->user()) {
+            try {
+                $this->syncFromSupabaseSession($request);
+            } catch (\Exception $e) {
+                Log::error('Session-based auto sync failed', [
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
         return $next($request);
     }
 
@@ -75,6 +87,39 @@ class AutoSyncSupabaseUser
                     'supabase_id' => $supabaseUser
                 ]);
             }
+        }
+    }
+
+    private function syncFromSupabaseSession(Request $request)
+    {
+        $supabaseUrl = config('services.supabase.url');
+        $supabaseServiceKey = config('services.supabase.service_role_key');
+        
+        if (!$supabaseUrl || !$supabaseServiceKey) {
+            return;
+        }
+
+        try {
+            // Get user from Supabase Auth
+            $response = Http::withHeaders([
+                'apikey' => $supabaseServiceKey,
+                'Authorization' => 'Bearer ' . $supabaseServiceKey,
+            ])->get("{$supabaseUrl}/auth/v1/admin/users");
+
+            if ($response->successful()) {
+                $responseData = $response->json();
+                $users = $responseData['users'] ?? $responseData;
+                
+                // For now, we'll just log that we found users
+                // In a real implementation, you'd extract the user from the session
+                Log::info('Found Supabase users in session sync', [
+                    'count' => count($users)
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to sync from Supabase session', [
+                'error' => $e->getMessage()
+            ]);
         }
     }
 } 
