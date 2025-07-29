@@ -2,63 +2,87 @@
 import InputError from '@/components/InputError.vue';
 import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AuthBase from '@/layouts/AuthLayout.vue';
 import { Head } from '@inertiajs/vue3';
-import { LoaderCircle } from 'lucide-vue-next';
+import { LoaderCircle, Mail, CheckCircle } from 'lucide-vue-next';
 import { ref, onMounted } from 'vue';
 import { supabase } from '@/lib/supabaseClient';
 import { useSupabaseUser } from '@/composables/useSupabaseUser';
 
 const form = ref({
     email: '',
-    password: '',
-    remember: false,
 });
 const errorMsg = ref('');
+const successMsg = ref('');
 const loading = ref(false);
-
+const emailSent = ref(false);
 
 const submit = async () => {
     loading.value = true;
     errorMsg.value = '';
+    successMsg.value = '';
+    
     try {
-        if (!form.value.email || !form.value.password) {
-            errorMsg.value = 'Email and password are required.';
+        if (!form.value.email) {
+            errorMsg.value = 'Email is required.';
             loading.value = false;
             return;
         }
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email: form.value.email,
-            password: form.value.password,
+        
+        // First, verify that the user exists in both Laravel and Supabase
+        const verifyResponse = await fetch('/api/verify-user-exists', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: form.value.email
+            })
         });
+        
+        const verifyResult = await verifyResponse.json();
+        
+        if (!verifyResponse.ok) {
+            errorMsg.value = 'Verification failed. Please try again.';
+            loading.value = false;
+            return;
+        }
+        
+        if (!verifyResult.exists) {
+            errorMsg.value = verifyResult.message || 'User not found. Please register first.';
+            loading.value = false;
+            return;
+        }
+        
+        // User exists, now send Magic Link
+        // If user needs Supabase sync, allow user creation
+        const shouldCreateUser = verifyResult.needs_supabase_sync || false;
+        
+        const { data, error } = await supabase.auth.signInWithOtp({
+            email: form.value.email,
+            options: {
+                emailRedirectTo: `${window.location.origin}/auth/confirm`,
+                shouldCreateUser: shouldCreateUser, // Allow creation for users who need sync
+            },
+        });
+        
         loading.value = false;
+        
         if (error) {
             errorMsg.value = error.message;
-        } else if (data && data.user) {
-            // Sync with backend
-            await fetch('/api/sync-supabase-user', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    id: data.user.id,
-                    email: data.user.email,
-                    name: data.user.user_metadata?.name || '',
-                    role: data.user.user_metadata?.role || 'Normal User',
-                })
-            });
-            if (data.user.email_confirmed_at) {
-                window.location.href = '/dashboard';
-            } else {
-                errorMsg.value = 'Please verify your email before logging in.';
-            }
+        } else {
+            // Magic link sent successfully
+            emailSent.value = true;
+            successMsg.value = `Magic link sent to ${form.value.email}. Please check your email and click the link to sign in.`;
         }
     } catch (e) {
         errorMsg.value = 'Network error: Unable to reach authentication server.';
         loading.value = false;
     }
+};
+
+const resendMagicLink = async () => {
+    await submit();
 };
 
 const { user, session } = useSupabaseUser();
@@ -73,25 +97,68 @@ onMounted(() => {
 <template>
     <AuthBase>
         <Head title="Login" />
-        <div v-if="loading" class="flex items-center justify-center h-96">
-            <LoaderCircle class="animate-spin h-8 w-8 text-primary" />
-        </div>
-        <form v-else @submit.prevent="submit" class="space-y-6">
-            <div>
-                <Label for="email">Email</Label>
-                <Input id="email" v-model="form.email" type="email" required autofocus />
+        
+        <!-- Email Sent Success State -->
+        <div v-if="emailSent" class="text-center space-y-6">
+            <div class="flex justify-center">
+                <CheckCircle class="h-16 w-16 text-green-500" />
             </div>
-            <div>
-                <Label for="password">Password</Label>
-                <Input id="password" v-model="form.password" type="password" required />
+            <div class="space-y-4">
+                <h2 class="text-2xl font-bold text-gray-900">Check your email</h2>
+                <p class="text-gray-600">{{ successMsg }}</p>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <p class="text-sm text-gray-500">
+                        Didn't receive the email? Check your spam folder or
+                        <button 
+                            @click="resendMagicLink" 
+                            :disabled="loading"
+                            class="text-primary hover:underline font-medium"
+                        >
+                            click here to resend
+                        </button>
+                    </p>
+                </div>
             </div>
-            <InputError :message="errorMsg" />
-            <Button :disabled="loading" class="w-full">
-                Login
+            <Button @click="emailSent = false" variant="outline" class="w-full">
+                Try a different email
             </Button>
-        </form>
-        <div class="mt-4 text-center">
-            <TextLink href="/register">Don't have an account? Register</TextLink>
+        </div>
+
+        <!-- Login Form -->
+        <div v-else>
+            <div class="text-center mb-6">
+                <h1 class="text-2xl font-bold text-gray-900">Sign in to your account</h1>
+                <p class="text-gray-600 mt-2">Enter your email to receive a magic link</p>
+            </div>
+            
+            <form @submit.prevent="submit" class="space-y-6">
+                <div>
+                    <Label for="email">Email address</Label>
+                    <Input 
+                        id="email" 
+                        v-model="form.email" 
+                        type="email" 
+                        required 
+                        autofocus 
+                        placeholder="Enter your email"
+                    />
+                </div>
+                
+                <InputError :message="errorMsg" />
+                
+                <Button :disabled="loading" class="w-full" type="submit">
+                    <Mail v-if="!loading" class="h-4 w-4 mr-2" />
+                    <LoaderCircle v-else class="animate-spin h-4 w-4 mr-2" />
+                    {{ loading ? 'Sending magic link...' : 'Send magic link' }}
+                </Button>
+            </form>
+            
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-600">
+                    Don't have an account? 
+                    <TextLink href="/register">Sign up here</TextLink>
+                </p>
+            </div>
         </div>
     </AuthBase>
 </template>

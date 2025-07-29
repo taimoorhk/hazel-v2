@@ -28,5 +28,9 @@ Route::get('/register', function () {
     return Inertia::render('auth/Register');
 })->name('register');
 
+Route::get('/auth/confirm', function () {
+    return Inertia::render('auth/Confirm');
+})->name('auth.confirm');
+
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

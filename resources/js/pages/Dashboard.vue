@@ -24,6 +24,7 @@ const showRoleChangeDialog = ref(false);
 const roleChangeLoading = ref(false);
 const roleChangeError = ref('');
 
+
 onMounted(async () => {
   // Wait for session to be available
   const waitForSession = async () => {
@@ -433,6 +434,8 @@ async function acceptRoleChange() {
   roleChangeLoading.value = false;
 }
 
+
+
 onUnmounted(() => {
   if (pollingInterval) {
     clearInterval(pollingInterval);
@@ -463,10 +466,13 @@ onUnmounted(() => {
                   'User'
                 }}!</span>
               </span>
-              <button v-if="isNormalUser()" @click="showRoleChangeDialog = true" class="ml-4 h-8 px-3 rounded-md bg-primary text-primary-foreground text-sm font-medium shadow-xs hover:bg-primary/90 transition-all">
+              <button v-if="isNormalUser()" @click="showRoleChangeDialog = true" class="h-8 px-3 rounded-md bg-primary text-primary-foreground text-sm font-medium shadow-xs hover:bg-primary/90 transition-all">
                 Add More Profiles
               </button>
             </h1>
+            
+
+            
             <!-- Professional, accessible modal dialog -->
             <div v-if="showRoleChangeDialog" class="fixed inset-0 flex items-center justify-center z-50 bg-black/30">
               <div class="bg-white rounded shadow-lg p-8 w-full max-w-md">

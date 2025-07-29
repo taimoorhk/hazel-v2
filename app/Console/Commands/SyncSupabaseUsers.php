@@ -2,76 +2,115 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Http;
 use App\Models\User;
 use App\Models\Role;
-use App\Models\Account;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class SyncSupabaseUsers extends Command
 {
-    protected $signature = 'sync:supabase-users';
-    protected $description = 'Sync all users and roles from Supabase auth.users to backend tables';
+    protected $signature = 'supabase:sync-users';
+    protected $description = 'Sync all Supabase users to Laravel database';
 
     public function handle()
     {
-        $supabaseApiKey = config('services.supabase.service_role_key');
+        $this->info('Starting Supabase users sync...');
+
         $supabaseUrl = config('services.supabase.url');
-        $password = Hash::make('password');
-        $roles = [
-            'Normal User' => Role::where('name', 'Normal User')->first(),
-            'Caregiver' => Role::where('name', 'Caregiver')->first(),
-            'Organization' => Role::where('name', 'Organization')->first(),
-            'Admin' => Role::where('name', 'Admin')->first(),
-        ];
-        $accounts = [
-            'Normal User' => Account::firstOrCreate(['name' => 'Normal User Account']),
-            'Caregiver' => Account::firstOrCreate(['name' => 'Caregiver Account']),
-            'Organization' => Account::firstOrCreate(['name' => 'Organization Account']),
-            'Admin' => Account::firstOrCreate(['name' => 'Admin Account']),
-        ];
-        if ($supabaseApiKey && $supabaseUrl) {
+        $supabaseKey = config('services.supabase.service_role_key');
+        $supabaseAnonKey = config('services.supabase.anon_key');
+
+        if (!$supabaseUrl) {
+            $this->error('Supabase URL missing. Please check your .env file.');
+            return 1;
+        }
+
+        // Use service role key if available, otherwise use anon key
+        $keyToUse = $supabaseKey ?: $supabaseAnonKey;
+        if (!$keyToUse) {
+            $this->error('Supabase key missing. Please add SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY to your .env file.');
+            return 1;
+        }
+
+        try {
+            // Fetch all users from Supabase
             $response = Http::withHeaders([
-                'apikey' => $supabaseApiKey,
-                'Authorization' => 'Bearer ' . $supabaseApiKey,
-            ])->get("$supabaseUrl/auth/v1/users");
-            $supabaseUsers = $response->json('users') ?? [];
-            foreach ($supabaseUsers as $sUser) {
-                $roleName = $sUser['user_metadata']['role'] ?? 'Normal User';
-                $role = $roles[$roleName] ?? $roles['Normal User'];
-                $account = $accounts[$roleName] ?? $accounts['Normal User'];
-                $user = User::firstOrCreate(
-                    ['email' => $sUser['email']],
-                    [
-                        'name' => $sUser['user_metadata']['name'] ?? $sUser['email'],
-                        'password' => $password,
-                        'supabase_id' => $sUser['id'],
-                        'current_account_id' => $account->id,
-                        'user_questions' => $sUser['user_metadata']['user_questions'] ?? null,
-                    ]
-                );
-                $user->accounts()->syncWithoutDetaching([$account->id]);
-                $user->roles()->syncWithoutDetaching([$role->id => ['account_id' => $account->id]]);
+                'apikey' => $keyToUse,
+                'Authorization' => 'Bearer ' . $keyToUse,
+            ])->get("$supabaseUrl/auth/v1/admin/users");
+
+            if (!$response->successful()) {
+                $this->error('Failed to fetch users from Supabase: ' . $response->body());
+                return 1;
             }
-        }
-        // After syncing from Supabase, also push any backend changes to Supabase auth.users
-        foreach (User::with('roles')->get() as $user) {
-            $latestRole = $user->roles()->latest('user_roles.created_at')->first();
-            $latestRoleName = $latestRole ? $latestRole->name : 'Normal User';
-            if ($supabaseApiKey && $supabaseUrl && $user->supabase_id) {
-                Http::withHeaders([
-                    'apikey' => $supabaseApiKey,
-                    'Authorization' => 'Bearer ' . $supabaseApiKey,
-                    'Content-Type' => 'application/json',
-                ])->patch("$supabaseUrl/auth/v1/admin/users/{$user->supabase_id}", [
-                    'user_metadata' => [
-                        'role' => $latestRoleName,
-                        'user_questions' => $user->user_questions,
-                    ],
-                ]);
+
+            $supabaseUsers = $response->json();
+            $this->info("Found " . count($supabaseUsers) . " users in Supabase");
+
+            $syncedCount = 0;
+            $errorCount = 0;
+
+            foreach ($supabaseUsers as $supabaseUser) {
+                try {
+                    $email = $supabaseUser['email'] ?? null;
+                    $supabaseId = $supabaseUser['id'] ?? null;
+                    $userMetadata = $supabaseUser['user_metadata'] ?? [];
+                    
+                    if (!$email || !$supabaseId) {
+                        $this->warn("Skipping user with missing email or ID: " . json_encode($supabaseUser));
+                        continue;
+                    }
+
+                    // Check if user already exists
+                    $existingUser = User::where('email', $email)->orWhere('supabase_id', $supabaseId)->first();
+
+                    if ($existingUser) {
+                        // Update existing user
+                        $existingUser->update([
+                            'supabase_id' => $supabaseId,
+                            'name' => $userMetadata['name'] ?? $userMetadata['display_name'] ?? $existingUser->name,
+                        ]);
+                        $user = $existingUser;
+                        $this->line("Updated user: $email");
+                    } else {
+                        // Create new user
+                        $user = User::create([
+                            'name' => $userMetadata['name'] ?? $userMetadata['display_name'] ?? 'User',
+                            'email' => $email,
+                            'password' => bcrypt(Str::random(32)),
+                            'supabase_id' => $supabaseId,
+                            'user_questions' => $userMetadata['user_questions'] ?? null,
+                        ]);
+                        $this->line("Created user: $email");
+                    }
+
+                    // Handle role assignment
+                    $roleName = $userMetadata['role'] ?? 'Normal User';
+                    $role = Role::where('name', $roleName)->first();
+                    
+                    if ($role && !$user->roles->contains($role->id)) {
+                        $user->roles()->attach($role->id, ['account_id' => 1]);
+                        $this->line("Assigned role '$roleName' to user: $email");
+                    }
+
+                    $syncedCount++;
+                } catch (\Exception $e) {
+                    $this->error("Error syncing user {$email}: " . $e->getMessage());
+                    $errorCount++;
+                }
             }
+
+            $this->info("Sync completed!");
+            $this->info("Successfully synced: $syncedCount users");
+            if ($errorCount > 0) {
+                $this->warn("Errors encountered: $errorCount users");
+            }
+
+            return 0;
+        } catch (\Exception $e) {
+            $this->error('Sync failed: ' . $e->getMessage());
+            return 1;
         }
-        $this->info('Supabase users and roles synced to backend.');
     }
 } 
