@@ -9,3 +9,4 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::post('/sync-supabase-user', [AuthController::class, 'syncSupabaseUser']);
+Route::post('/check-user-questions', [AuthController::class, 'checkUserQuestions']);

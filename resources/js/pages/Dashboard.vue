@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardAction } from '@/componen
 import Icon from '@/components/Icon.vue';
 import { VueUiWheel } from 'vue-data-ui';
 import { VueUiTiremarks } from 'vue-data-ui';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useAuthGuard } from '@/composables/useAuthGuard';
 import { useSupabaseUser } from '@/composables/useSupabaseUser';
 import { Link } from '@inertiajs/vue3';
@@ -25,19 +25,40 @@ const roleChangeLoading = ref(false);
 const roleChangeError = ref('');
 
 onMounted(async () => {
-  if (session && session.value) {
-    // Fetch the latest user details from Supabase
-    const { data, error } = await supabase.auth.getUser();
-    if (data && data.user) {
-      realtimeUser.value = data.user;
-    }
-    // Listen for user changes in realtime
-    supabase.auth.onAuthStateChange((_event, newSession) => {
-      if (newSession && newSession.user) {
-        realtimeUser.value = newSession.user;
+  // Wait for session to be available
+  const waitForSession = async () => {
+    if (session) {
+      // Fetch the latest user details from Supabase
+      const { data, error } = await supabase.auth.getUser();
+      if (data && data.user) {
+        realtimeUser.value = data.user;
       }
-    });
-  }
+      // Listen for user changes in realtime
+      supabase.auth.onAuthStateChange((_event, newSession) => {
+        if (newSession && newSession.user) {
+          realtimeUser.value = newSession.user;
+        }
+      });
+      
+      // Check user questions from backend with a small delay to ensure user is loaded
+      setTimeout(async () => {
+        await checkUserQuestionsFromBackend();
+      }, 1000);
+      
+      // Start continuous polling every 2 seconds for real-time updates
+      continuousPollingInterval = window.setInterval(async () => {
+        const hasQuestions = await checkUserQuestionsFromBackend();
+        // Force reactivity update
+        if (hasQuestions) {
+          // User questions detected, UI will update automatically
+        }
+      }, 2000);
+    } else {
+      setTimeout(waitForSession, 500);
+    }
+  };
+  
+  await waitForSession();
 });
 
 function getRandomScore() {
@@ -283,25 +304,41 @@ const tiremarksConfig = ref({
     }
 });
 
-const onboardingQuestion = ref<string | null>(null);
-const onboardingInput = ref('');
+const userQuestions = ref<string | null>(null);
+const userQuestionsLoaded = ref(false);
 const onboardingLoading = ref(false);
+const userRole = ref<string | null>(null);
 const onboardingFormLink = 'https://example.com/onboarding-form'; // Example form link
 
 let pollingInterval: number | null = null;
+let continuousPollingInterval: number | null = null;
 
 async function openOnboardingForm() {
   window.open(onboardingFormLink, '_blank');
-  // Start polling for onboarding_question update
+  // Start polling for user_questions update from backend
   pollingInterval = window.setInterval(async () => {
     const { data } = await supabase.auth.getUser();
     if (data && data.user) {
-      realtimeUser.value = data.user;
-      const meta = (data.user && data.user.user_metadata);
-      if (meta && meta.onboarding_question) {
-        if (pollingInterval) {
-          clearInterval(pollingInterval);
-          pollingInterval = null;
+      // Check backend for user_questions
+      const response = await fetch('/api/check-user-questions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: data.user.email
+        })
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.has_questions) {
+          if (pollingInterval) {
+            clearInterval(pollingInterval);
+            pollingInterval = null;
+          }
+          // Refresh user data and update local state
+          realtimeUser.value = data.user;
+          userQuestions.value = result.user_questions;
+          userRole.value = result.role;
         }
       }
     }
@@ -309,47 +346,58 @@ async function openOnboardingForm() {
 }
 
 function isNormalUser() {
+  // First check the role from the API response
+  if (userRole.value) {
+    return userRole.value === 'Normal User';
+  }
+  // Fallback to Supabase metadata
   const meta = (realtimeUser.value && realtimeUser.value.user_metadata) || (user && user.value && user.value.user_metadata);
   return meta && meta.role === 'Normal User';
 }
 
-function hasOnboardingQuestion() {
-  const meta = (realtimeUser.value && realtimeUser.value.user_metadata) || (user && user.value && user.value.user_metadata);
-  return !!(meta && meta.onboarding_question);
+function hasUserQuestions() {
+  // Check if user has completed the onboarding questions
+  const hasQuestions = userQuestions.value !== null && userQuestions.value !== '';
+  return hasQuestions;
 }
 
-async function saveOnboardingQuestion() {
-  onboardingLoading.value = true;
-  const { error } = await supabase.auth.updateUser({
-    data: { onboarding_question: onboardingInput.value }
-  });
-  onboardingLoading.value = false;
-  if (!error) {
-    // Refresh user data
-    const { data } = await supabase.auth.getUser();
-    if (data && data.user) {
-      realtimeUser.value = data.user;
-      onboardingInput.value = '';
+async function checkUserQuestionsFromBackend() {
+  const { data } = await supabase.auth.getUser();
+  
+  if (data && data.user) {
+    try {
+      const response = await fetch('/api/check-user-questions', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+          email: data.user.email
+        })
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        
+        userQuestions.value = result.user_questions;
+        userRole.value = result.role;
+        userQuestionsLoaded.value = true;
+        
+        return result.has_questions;
+      } else {
+        console.error('API response not ok:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('API check error:', error);
     }
   }
+  return false;
 }
 
-async function handleAddDetails() {
-  // Simulate user filling the form and returning with details
-  // In a real app, you would handle this via a callback or webhook
-  onboardingLoading.value = true;
-  // Example: set onboarding_question to a placeholder value
-  const { error } = await supabase.auth.updateUser({
-    data: { onboarding_question: 'Details submitted via form.' }
-  });
-  onboardingLoading.value = false;
-  if (!error) {
-    const { data } = await supabase.auth.getUser();
-    if (data && data.user) {
-      realtimeUser.value = data.user;
-    }
-  }
-}
+
+
+
 
 async function acceptRoleChange() {
   roleChangeLoading.value = true;
@@ -384,6 +432,17 @@ async function acceptRoleChange() {
   }
   roleChangeLoading.value = false;
 }
+
+onUnmounted(() => {
+  if (pollingInterval) {
+    clearInterval(pollingInterval);
+    pollingInterval = null;
+  }
+  if (continuousPollingInterval) {
+    clearInterval(continuousPollingInterval);
+    continuousPollingInterval = null;
+  }
+});
 </script>
 
 <template>
@@ -422,7 +481,21 @@ async function acceptRoleChange() {
                 </div>
               </div>
             </div>
-            <div v-if="isNormalUser() && !hasOnboardingQuestion()" class="mb-8">
+
+
+            
+            <div v-if="isNormalUser() && !userQuestionsLoaded" class="mb-8">
+              <Card>
+                <CardContent class="flex items-center justify-center py-8">
+                  <div class="text-center">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                    <p class="text-sm text-gray-600">Checking your profile...</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+            
+            <div v-if="isNormalUser() && userQuestionsLoaded && !hasUserQuestions()" class="mb-8">
               <Card>
                 <CardContent class="flex flex-col md:flex-row items-center justify-between gap-4 py-4">
                   <div class="flex-1 text-left">
@@ -437,7 +510,7 @@ async function acceptRoleChange() {
                 </CardContent>
               </Card>
             </div>
-            <div v-if="!isNormalUser() || hasOnboardingQuestion()">
+            <div v-if="!isNormalUser() || (userQuestionsLoaded && hasUserQuestions())">
               <!-- Restored Dashboard UI -->
               <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
                 <Card v-for="stat in stats" :key="stat.title" class="h-auto flex flex-col justify-between p-4 min-h-20">

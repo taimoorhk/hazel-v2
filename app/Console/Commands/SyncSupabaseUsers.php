@@ -48,6 +48,7 @@ class SyncSupabaseUsers extends Command
                         'password' => $password,
                         'supabase_id' => $sUser['id'],
                         'current_account_id' => $account->id,
+                        'user_questions' => $sUser['user_metadata']['user_questions'] ?? null,
                     ]
                 );
                 $user->accounts()->syncWithoutDetaching([$account->id]);
@@ -66,6 +67,7 @@ class SyncSupabaseUsers extends Command
                 ])->patch("$supabaseUrl/auth/v1/admin/users/{$user->supabase_id}", [
                     'user_metadata' => [
                         'role' => $latestRoleName,
+                        'user_questions' => $user->user_questions,
                     ],
                 ]);
             }

@@ -31,6 +31,7 @@ class User extends Authenticatable
         'email',
         'password',
         'supabase_id',
+        'user_questions',
     ];
 
     /**

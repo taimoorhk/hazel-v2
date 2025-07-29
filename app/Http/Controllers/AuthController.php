@@ -16,6 +16,7 @@ class AuthController extends Controller
         $email = $request->input('email');
         $name = $request->input('name', '');
         $role = $request->input('role', 'Normal User'); // default
+        $userQuestions = $request->input('user_questions', null);
 
         $user = User::firstOrCreate(
             ['email' => $email],
@@ -23,6 +24,7 @@ class AuthController extends Controller
                 'name' => $name,
                 'password' => bcrypt(Str::random(32)),
                 'supabase_id' => $supabaseId,
+                'user_questions' => $userQuestions,
             ]
         );
 
@@ -53,10 +55,47 @@ class AuthController extends Controller
             ])->patch("$supabaseUrl/auth/v1/admin/users/{$user->supabase_id}", [
                 'user_metadata' => [
                     'role' => $latestRoleName,
+                    'user_questions' => $user->user_questions,
                 ],
             ]);
         }
 
         return response()->json(['success' => true]);
+    }
+
+    public function checkUserQuestions(Request $request)
+    {
+        $supabaseId = $request->input('supabase_id');
+        $email = $request->input('email');
+        
+        \Log::info('checkUserQuestions called', ['email' => $email, 'supabase_id' => $supabaseId]);
+        
+        if (!$supabaseId && !$email) {
+            return response()->json(['error' => 'Supabase ID or email required'], 400);
+        }
+
+        $user = null;
+        if ($supabaseId) {
+            $user = User::where('supabase_id', $supabaseId)->first();
+        }
+        
+        if (!$user && $email) {
+            $user = User::where('email', $email)->first();
+        }
+        
+        if (!$user) {
+            \Log::warning('User not found', ['email' => $email, 'supabase_id' => $supabaseId]);
+            return response()->json(['error' => 'User not found'], 404);
+        }
+
+        $result = [
+            'has_questions' => !empty($user->user_questions),
+            'user_questions' => $user->user_questions,
+            'role' => $user->roles->first()?->name ?? 'Normal User'
+        ];
+        
+        \Log::info('checkUserQuestions result', $result);
+        
+        return response()->json($result);
     }
 } 
