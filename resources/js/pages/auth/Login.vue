@@ -156,7 +156,7 @@ onMounted(() => {
             <div class="mt-6 text-center">
                 <p class="text-sm text-gray-600">
                     Don't have an account? 
-                    <TextLink href="/register">Sign up here</TextLink>
+                    <a href="https://form.fillout.com/t/bVrkgZUwVEus" target="_blank" class="text-primary hover:underline font-medium">Sign up here</a>
                 </p>
             </div>
         </div>

@@ -346,6 +346,10 @@ async function openOnboardingForm() {
   }, 2000); // Poll every 2 seconds
 }
 
+function openOnboardingFormLink() {
+  window.open('https://form.fillout.com/t/hZP4BtRFr4us', '_blank');
+}
+
 function isNormalUser() {
   // First check the role from the API response
   if (userRole.value) {
@@ -545,6 +549,7 @@ onUnmounted(() => {
               </Card>
             </div>
             
+            <!-- Onboarding Card -->
             <div v-if="isNormalUser() && userQuestionsLoaded && !hasUserQuestions()" class="mb-8">
               <Card>
                 <CardContent class="flex flex-col md:flex-row items-center justify-between gap-4 py-4">
@@ -553,7 +558,7 @@ onUnmounted(() => {
                     <p class="text-sm text-blue-800">To get started, please add your details using the form below. This helps us personalize your experience.</p>
                   </div>
                   <div class="flex items-center h-full">
-                    <Button :disabled="onboardingLoading" @click="openOnboardingForm" size="sm" variant="default">
+                    <Button :disabled="onboardingLoading" @click="openOnboardingFormLink" size="sm" variant="default">
                       Add Details
                     </Button>
                   </div>

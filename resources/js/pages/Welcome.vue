@@ -26,12 +26,13 @@ const { user } = useSupabaseUser();
                     >
                         Log in
                     </Link>
-                    <Link
-                        href="/register"
+                    <a
+                        href="https://form.fillout.com/t/bVrkgZUwVEus"
+                        target="_blank"
                         class="inline-block rounded-sm border border-[#19140035] px-5 py-1.5 text-sm leading-normal text-[#1b1b18] hover:border-[#1915014a] dark:border-[#3E3E3A] dark:text-[#EDEDEC] dark:hover:border-[#62605b]"
                     >
                         Register
-                    </Link>
+                    </a>
                 </template>
             </nav>
         </header>
