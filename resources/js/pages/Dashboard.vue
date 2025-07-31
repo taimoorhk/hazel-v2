@@ -14,9 +14,11 @@ import { supabase } from '@/lib/supabaseClient';
 import type { User } from '@supabase/supabase-js';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { usePostHog } from '@/composables/usePostHog';
 
 const { loading } = useAuthGuard();
 const { user, session } = useSupabaseUser();
+const { posthog } = usePostHog();
 
 // Add a ref for the latest user details
 const realtimeUser = ref<User | null>(null);
@@ -26,6 +28,12 @@ const roleChangeError = ref('');
 
 
 onMounted(async () => {
+  // Track dashboard page view
+  posthog.capture('dashboard_viewed', {
+    user_email: user.value?.email,
+    user_id: user.value?.id,
+  });
+  
   // Wait for session to be available
   const waitForSession = async () => {
     if (session) {
@@ -347,6 +355,13 @@ async function openOnboardingForm() {
 }
 
 function openOnboardingFormLink() {
+  // Track onboarding form link click
+  posthog.capture('onboarding_form_clicked', {
+    user_email: user.value?.email,
+    user_id: user.value?.id,
+    form_url: 'https://form.fillout.com/t/hZP4BtRFr4us',
+  });
+  
   window.open('https://form.fillout.com/t/hZP4BtRFr4us', '_blank');
 }
 

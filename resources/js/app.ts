@@ -7,6 +7,7 @@ import { createApp, h } from 'vue';
 import { ZiggyVue } from 'ziggy-js';
 import { initializeTheme } from './composables/useAppearance';
 import { provideSupabaseUser } from '@/composables/useSupabaseUser';
+import { setupPostHog } from '@/plugins/posthog';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -18,6 +19,10 @@ createInertiaApp({
             .use(plugin)
             .use(ZiggyVue);
         provideSupabaseUser();
+        
+        // Initialize PostHog
+        const { posthog } = setupPostHog();
+        
         app.mount(el);
     },
     progress: {

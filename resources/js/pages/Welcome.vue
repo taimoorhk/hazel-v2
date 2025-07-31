@@ -1,7 +1,27 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 import { useSupabaseUser } from '@/composables/useSupabaseUser';
+import { usePostHog } from '@/composables/usePostHog';
+import { onMounted } from 'vue';
+
 const { user } = useSupabaseUser();
+const { posthog } = usePostHog();
+
+onMounted(() => {
+  // Track welcome page view
+  posthog.capture('welcome_page_viewed', {
+    user_email: user.value?.email,
+    user_id: user.value?.id,
+  });
+});
+
+function handleRegisterClick() {
+  posthog.capture('register_button_clicked', { 
+    user_email: user.value?.email, 
+    user_id: user.value?.id, 
+    form_url: 'https://form.fillout.com/t/bVrkgZUwVEus' 
+  });
+}
 </script>
 
 <template>
@@ -29,6 +49,7 @@ const { user } = useSupabaseUser();
                     <a
                         href="https://form.fillout.com/t/bVrkgZUwVEus"
                         target="_blank"
+                        @click="handleRegisterClick"
                         class="inline-block rounded-sm border border-[#19140035] px-5 py-1.5 text-sm leading-normal text-[#1b1b18] hover:border-[#1915014a] dark:border-[#3E3E3A] dark:text-[#EDEDEC] dark:hover:border-[#62605b]"
                     >
                         Register
