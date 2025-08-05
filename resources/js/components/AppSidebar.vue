@@ -5,7 +5,7 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, Users } from 'lucide-vue-next';
+import { BookOpen, Folder, LayoutGrid, Users, BarChart3 } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 import { useSupabaseUser } from '@/composables/useSupabaseUser';
 import { computed } from 'vue';
@@ -17,6 +17,11 @@ const mainNavItems: NavItem[] = [
         icon: LayoutGrid,
     },
     {
+        title: 'Reports',
+        href: '/reports',
+        icon: BarChart3,
+    },
+    {
         title: 'Elderly Profiles',
         href: '/elderly-profiles',
         icon: Users,
@@ -25,13 +30,13 @@ const mainNavItems: NavItem[] = [
 
 const footerNavItems: NavItem[] = [
     {
-        title: 'Github Repo',
-        href: 'https://github.com/laravel/vue-starter-kit',
+        title: 'Billing',
+        href: '/billing',
         icon: Folder,
     },
     {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#vue',
+        title: 'Help',
+        href: '/help',
         icon: BookOpen,
     },
 ];

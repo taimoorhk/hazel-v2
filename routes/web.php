@@ -20,6 +20,18 @@ Route::get('dashboard', function () {
     return Inertia::render('Dashboard');
 })->name('dashboard');
 
+Route::get('/billing', function () {
+    return Inertia::render('Billing');
+})->name('billing');
+
+Route::get('/help', function () {
+    return Inertia::render('Help');
+})->name('help');
+
+Route::get('/reports', function () {
+    return Inertia::render('Reports');
+})->name('reports');
+
 Route::get('/login', function () {
     return Inertia::render('auth/Login');
 })->name('login');

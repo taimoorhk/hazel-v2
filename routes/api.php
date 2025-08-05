@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ElderlyProfileController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -23,6 +24,13 @@ Route::post('/create-test-user', [AuthController::class, 'createTestUser']);
 Route::post('/check-supabase-user', [AuthController::class, 'checkSupabaseUser']);
 Route::post('/check-public-users', [AuthController::class, 'checkPublicUsers']);
 Route::post('/sync-from-supabase-to-laravel', [AuthController::class, 'syncFromSupabaseToLaravel']);
+
+// Elderly Profiles API routes - Protected by authentication
+Route::middleware('auth:sanctum')->group(function () {
+    Route::apiResource('elderly-profiles', ElderlyProfileController::class);
+    Route::patch('elderly-profiles/{elderlyProfile}/deactivate', [ElderlyProfileController::class, 'deactivate']);
+});
+
 Route::get('/test-auth-flow', function() {
     return response()->json([
         'message' => 'Auth flow test endpoint',

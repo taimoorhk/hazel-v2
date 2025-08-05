@@ -42,13 +42,13 @@ const mainNavItems: NavItem[] = [
 
 const rightNavItems: NavItem[] = [
     {
-        title: 'Repository',
-        href: 'https://github.com/laravel/vue-starter-kit',
+        title: 'Billing',
+        href: '/billing',
         icon: Folder,
     },
     {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#vue',
+        title: 'Help',
+        href: '/help',
         icon: BookOpen,
     },
 ];
@@ -85,17 +85,15 @@ const rightNavItems: NavItem[] = [
                                     </Link>
                                 </nav>
                                 <div class="flex flex-col space-y-4">
-                                    <a
+                                    <Link
                                         v-for="item in rightNavItems"
                                         :key="item.title"
                                         :href="item.href"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
                                         class="flex items-center space-x-2 text-sm font-medium"
                                     >
                                         <component v-if="item.icon" :is="item.icon" class="h-5 w-5" />
                                         <span>{{ item.title }}</span>
-                                    </a>
+                                    </Link>
                                 </div>
                             </div>
                         </SheetContent>
@@ -139,10 +137,10 @@ const rightNavItems: NavItem[] = [
                                     <Tooltip>
                                         <TooltipTrigger>
                                             <Button variant="ghost" size="icon" as-child class="group h-9 w-9 cursor-pointer">
-                                                <a :href="item.href" target="_blank" rel="noopener noreferrer">
+                                                <Link :href="item.href">
                                                     <span class="sr-only">{{ item.title }}</span>
                                                     <component :is="item.icon" class="size-5 opacity-80 group-hover:opacity-100" />
-                                                </a>
+                                                </Link>
                                             </Button>
                                         </TooltipTrigger>
                                         <TooltipContent>

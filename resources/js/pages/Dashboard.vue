@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardAction } from '@/componen
 import Icon from '@/components/Icon.vue';
 import { VueUiWheel } from 'vue-data-ui';
 import { VueUiTiremarks } from 'vue-data-ui';
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useAuthGuard } from '@/composables/useAuthGuard';
 import { useSupabaseUser } from '@/composables/useSupabaseUser';
 import { Link } from '@inertiajs/vue3';
@@ -126,6 +126,47 @@ const elderlyProfiles = [
   { name: 'David Kim', score: 65, change: -0.8 },
   { name: 'Emma Brown', score: 78, change: 1.7 },
   { name: 'Frank Green', score: 88, change: 2.0 },
+];
+
+// Add computed total average score for normal users
+const totalAverageScore = computed(() => {
+  if (elderlyProfiles.length === 0) return 0;
+  const total = elderlyProfiles.reduce((sum, profile) => sum + profile.score, 0);
+  return Math.round(total / elderlyProfiles.length);
+});
+
+// Add textual stats for normal users
+const userStats = [
+  {
+    title: 'Total Profiles Monitored',
+    value: elderlyProfiles.length,
+    description: 'Number of elderly profiles you are currently monitoring'
+  },
+  {
+    title: 'Average Score',
+    value: `${totalAverageScore.value}%`,
+    description: 'Overall average score across all monitored profiles'
+  },
+  {
+    title: 'Highest Score',
+    value: `${Math.max(...elderlyProfiles.map(p => p.score))}%`,
+    description: 'Best performing profile in your monitoring list'
+  },
+  {
+    title: 'Lowest Score',
+    value: `${Math.min(...elderlyProfiles.map(p => p.score))}%`,
+    description: 'Profile that needs the most attention'
+  },
+  {
+    title: 'Profiles Improving',
+    value: elderlyProfiles.filter(p => p.change > 0).length,
+    description: 'Number of profiles showing positive trends'
+  },
+  {
+    title: 'Profiles Declining',
+    value: elderlyProfiles.filter(p => p.change < 0).length,
+    description: 'Number of profiles showing negative trends'
+  }
 ];
 
 const baseWheelConfig = {
@@ -605,11 +646,38 @@ onUnmounted(() => {
                   </CardHeader>
                 </Card>
               </div>
-              <div class="flex flex-row gap-6 mb-8">
+              <!-- Different layout for normal users vs caregivers -->
+              <div v-if="isNormalUser()" class="flex flex-row gap-6 mb-8">
+                <!-- Single chart card for normal users -->
+                <div class="w-[30%]">
+                  <div class="flex items-center justify-between mb-2">
+                    <h2 class="text-lg font-semibold">Total Average Score</h2>
+                    <Link href="/elderly-profiles" class="text-blue-600 hover:text-blue-800 underline font-medium">View Report</Link>
+                  </div>
+                  <Card class="flex flex-col items-center py-6">
+                    <VueUiWheel :dataset="{ percentage: totalAverageScore }" :config="baseWheelConfig" />
+                  </Card>
+                </div>
+                <!-- Combined stats component for normal users -->
+                <div class="w-[70%]">
+                  <h2 class="text-lg font-semibold mb-4">Your Monitoring Statistics</h2>
+                  <div class="grid grid-cols-2 gap-4">
+                    <Card v-for="stat in userStats" :key="stat.title" class="p-4">
+                      <div class="flex flex-col">
+                        <h3 class="text-sm font-medium text-gray-600 mb-1">{{ stat.title }}</h3>
+                        <div class="text-2xl font-bold text-gray-900 mb-2">{{ stat.value }}</div>
+                        <p class="text-xs text-gray-500">{{ stat.description }}</p>
+                      </div>
+                    </Card>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Original layout for caregivers -->
+              <div v-else class="flex flex-row gap-6 mb-8">
                 <div class="w-[70%]">
                   <div class="flex items-center justify-between mb-2">
                     <h2 class="text-lg font-semibold">Usage Overview</h2>
-                    <Link href="/elderly-profiles" class="px-6 py-1.5 bg-primary text-white rounded-full font-semibold hover:bg-primary/90 h-10 flex items-center">All Profiles</Link>
                   </div>
                   <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <Card v-for="profile in elderlyProfiles" :key="profile.name" class="flex flex-col items-center py-6">
