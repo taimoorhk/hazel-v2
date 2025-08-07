@@ -54,14 +54,14 @@ onMounted(async () => {
         await checkUserQuestionsFromBackend();
       }, 1000);
       
-      // Start continuous polling every 2 seconds for real-time updates
+      // Start continuous polling every 10 seconds for real-time updates (reduced from 2s to avoid log spam)
       continuousPollingInterval = window.setInterval(async () => {
         const hasQuestions = await checkUserQuestionsFromBackend();
         // Force reactivity update
         if (hasQuestions) {
           // User questions detected, UI will update automatically
         }
-      }, 2000);
+      }, 10000);
     } else {
       setTimeout(waitForSession, 500);
     }
@@ -374,7 +374,8 @@ async function openOnboardingForm() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: data.user.email
+          email: data.user.email,
+          supabase_id: data.user.id
         })
       });
       
@@ -392,7 +393,7 @@ async function openOnboardingForm() {
         }
       }
     }
-  }, 2000); // Poll every 2 seconds
+  }, 5000); // Poll every 5 seconds (reduced from 2s)
 }
 
 function openOnboardingFormLink() {
@@ -434,7 +435,8 @@ async function checkUserQuestionsFromBackend() {
           'X-Requested-With': 'XMLHttpRequest'
         },
         body: JSON.stringify({
-          email: data.user.email
+          email: data.user.email,
+          supabase_id: data.user.id
         })
       });
       
@@ -473,7 +475,8 @@ async function checkUserQuestionsFromBackend() {
                 'X-Requested-With': 'XMLHttpRequest'
               },
               body: JSON.stringify({
-                email: data.user.email
+                email: data.user.email,
+                supabase_id: data.user.id
               })
             });
             

@@ -5,7 +5,7 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, Users, BarChart3 } from 'lucide-vue-next';
+import { BookOpen, Folder, LayoutGrid, Users, BarChart3, Shield } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 import { useSupabaseUser } from '@/composables/useSupabaseUser';
 import { computed } from 'vue';
@@ -44,10 +44,24 @@ const footerNavItems: NavItem[] = [
 const { user } = useSupabaseUser();
 const filteredMainNavItems = computed(() => {
   const meta = user.value?.user_metadata;
-  if (meta && meta.role === 'Normal User') {
-    return mainNavItems.filter(item => item.title !== 'Elderly Profiles');
+  let items = [...mainNavItems];
+  
+  // Add admin panel for admin users
+  if (meta && (meta.role === 'Admin' || meta.role === 'Administration')) {
+    items.push({
+      title: 'Admin Panel',
+      href: '/admin',
+      icon: Shield,
+    });
   }
-  return mainNavItems;
+  
+  if (meta && meta.role === 'Normal User') {
+    items = items.filter(item => item.title !== 'Elderly Profiles');
+  }
+  if (meta && meta.role === 'Organization') {
+    items = items.filter(item => item.title !== 'Reports');
+  }
+  return items;
 });
 </script>
 

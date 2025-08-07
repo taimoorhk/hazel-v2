@@ -34,6 +34,14 @@ class ElderlyProfile extends Model
     ];
 
     /**
+     * Get the associated user account.
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'associated_account_email', 'email');
+    }
+
+    /**
      * Get the temporary role for this profile.
      * Always returns 'elderly user' as specified.
      */

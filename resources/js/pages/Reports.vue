@@ -299,4 +299,22 @@
 
 <script setup lang="ts">
 import AppSidebarLayout from '@/layouts/app/AppSidebarLayout.vue';
+import { useSupabaseUser } from '@/composables/useSupabaseUser';
+import { router as inertiaRouter } from '@inertiajs/vue3';
+import { onMounted } from 'vue';
+
+const { user } = useSupabaseUser();
+
+onMounted(() => {
+    // Check if user has Organization role and redirect if so
+    const meta = user.value?.user_metadata;
+    if (meta && meta.role === 'Organization') {
+        // Redirect to dashboard with a message
+        inertiaRouter.visit('/dashboard', {
+            data: {
+                message: 'Access denied. Reports are not available for Organization users.'
+            }
+        });
+    }
+});
 </script> 

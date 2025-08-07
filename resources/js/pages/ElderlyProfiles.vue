@@ -44,7 +44,12 @@ let realtimeChannel: any = null;
 onMounted(async () => {
   const meta = user.value?.user_metadata;
   if (meta && meta.role === 'Normal User') {
-    inertiaRouter.visit('/dashboard');
+    // Redirect Normal Users to dashboard with access denied message
+    inertiaRouter.visit('/dashboard', {
+      data: {
+        message: 'Access denied. Elderly Profiles are not available for Normal Users.'
+      }
+    });
     return;
   }
 
