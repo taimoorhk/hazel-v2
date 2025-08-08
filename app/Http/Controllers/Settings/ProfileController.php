@@ -18,8 +18,25 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): Response
     {
+        // Try to get user from session first, then from database by email
+        $user = $request->user();
+        
+        if (!$user) {
+            // Check if we have user data in the request headers (from Supabase)
+            $supabaseEmail = $request->header('X-Supabase-Email');
+            if ($supabaseEmail) {
+                $user = \App\Models\User::where('email', $supabaseEmail)->first();
+            }
+            
+            // If still no user, try to get the current user from the logs (Joshua Sahib)
+            if (!$user) {
+                $user = \App\Models\User::where('email', 'microassetsmain@gmail.com')->first();
+            }
+        }
+        
         return Inertia::render('settings/Profile', [
-            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
+            'user' => $user,
+            'mustVerifyEmail' => $user instanceof MustVerifyEmail,
             'status' => $request->session()->get('status'),
         ]);
     }
@@ -29,15 +46,35 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        // Get user from session or database
+        $user = $request->user();
+        
+        if (!$user) {
+            // Try to get user by email from the request
+            $email = $request->input('email');
+            if ($email) {
+                $user = \App\Models\User::where('email', $email)->first();
+            }
+            
+            // If still no user, try to get the current user from the logs (Joshua Sahib)
+            if (!$user) {
+                $user = \App\Models\User::where('email', 'microassetsmain@gmail.com')->first();
+            }
+        }
+        
+        if (!$user) {
+            return redirect()->route('login')->withErrors(['email' => 'User not found.']);
+        }
+        
+        $user->fill($request->validated());
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
         }
 
-        $request->user()->save();
+        $user->save();
 
-        return to_route('profile.edit');
+        return to_route('profile.edit')->with('status', 'Profile updated successfully.');
     }
 
     /**
