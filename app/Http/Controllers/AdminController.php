@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Role;
 use App\Models\ElderlyProfile;
+use App\Services\ElderlyProfileRealtimeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -66,7 +67,7 @@ class AdminController extends Controller
             'conversations' => 0, // TODO: Add conversation count when model is available
         ];
 
-        return Inertia::render('admin/Dashboard', [
+        return Inertia::render('admin/AdminDashboard', [
             'stats' => $stats,
         ]);
     }
@@ -175,7 +176,67 @@ class AdminController extends Controller
 
         $profile->update(['status' => $request->status]);
 
+        // Sync to Supabase
+        $realtimeService = new ElderlyProfileRealtimeService();
+        $realtimeService->pushToSupabase($profile, 'update');
+
         return back()->with('success', 'Profile status updated successfully.');
+    }
+
+    /**
+     * Update elderly profile
+     */
+    public function updateProfile(Request $request, ElderlyProfile $profile)
+    {
+        $request->validate([
+            'name' => 'nullable|string|max:255',
+            'email' => 'required|email|max:255',
+            'phone' => 'nullable|string|max:20',
+            'status' => 'required|in:active,inactive,deactivated',
+            'associated_account_email' => 'nullable|email|max:255',
+        ]);
+
+        $profile->update($request->only([
+            'name', 'email', 'phone', 'status', 'associated_account_email'
+        ]));
+
+        // Sync to Supabase
+        $realtimeService = new ElderlyProfileRealtimeService();
+        $realtimeService->pushToSupabase($profile, 'update');
+
+        return back()->with('success', 'Profile updated successfully.');
+    }
+
+    /**
+     * Delete elderly profile
+     */
+    public function deleteProfile(ElderlyProfile $profile)
+    {
+        // Sync to Supabase before deleting
+        $realtimeService = new ElderlyProfileRealtimeService();
+        $realtimeService->pushToSupabase($profile, 'delete');
+
+        $profile->delete();
+        return back()->with('success', 'Profile deleted successfully.');
+    }
+
+    /**
+     * Sync elderly profiles from Supabase
+     */
+    public function syncFromSupabase()
+    {
+        try {
+            $realtimeService = new ElderlyProfileRealtimeService();
+            $success = $realtimeService->syncAllProfiles();
+            
+            if ($success) {
+                return response()->json(['message' => 'Profiles synced successfully']);
+            } else {
+                return response()->json(['error' => 'Failed to sync profiles'], 500);
+            }
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error during sync: ' . $e->getMessage()], 500);
+        }
     }
 
     /**

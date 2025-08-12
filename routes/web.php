@@ -15,28 +15,29 @@ Route::get('/', function () {
 Route::resource('conversation', ConversationController::class);
 
 Route::get('/elderly-profiles', function () {
-    // Check if user is authenticated and has the right role
-    if (auth()->check()) {
-        $user = auth()->user();
-        // If user has Normal User role, redirect to dashboard
-        if ($user->role === 'Normal User') {
-            return redirect()->route('dashboard')->with('message', 'Access denied. Elderly Profiles are not available for Normal Users.');
-        }
-    }
     return inertia('ElderlyProfiles');
+})->name('elderly-profiles');
+
+// User-side elderly profile management routes
+Route::prefix('elderly-profiles')->group(function () {
+    Route::post('/', [App\Http\Controllers\ElderlyProfileController::class, 'store'])->name('elderly-profiles.store');
+    Route::patch('/{profile}', [App\Http\Controllers\ElderlyProfileController::class, 'update'])->name('elderly-profiles.update');
+    Route::patch('/{profile}/status', [App\Http\Controllers\ElderlyProfileController::class, 'updateStatus'])->name('elderly-profiles.update-status');
 });
 
 Route::get('dashboard', function () {
     return Inertia::render('Dashboard');
 })->name('dashboard');
 
+
+
+// Simple billing route (no backend authentication required)
 Route::get('/billing', function () {
     return Inertia::render('Billing');
 })->name('billing');
 
-// Stripe and Billing Routes
+// Stripe and Billing API Routes (these will handle authentication)
 Route::prefix('billing')->group(function () {
-    Route::get('/', [App\Http\Controllers\BillingController::class, 'index'])->name('billing.index');
     Route::get('/success', [App\Http\Controllers\BillingController::class, 'success'])->name('billing.success');
     Route::get('/cancel', [App\Http\Controllers\BillingController::class, 'cancel'])->name('billing.cancel');
     Route::post('/cancel-subscription', [App\Http\Controllers\BillingController::class, 'cancelSubscription'])->name('billing.cancel-subscription');

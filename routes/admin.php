@@ -31,6 +31,9 @@ Route::middleware(['admin'])->group(function () {
     // Elderly profiles management
     Route::get('elderly-profiles', [AdminController::class, 'elderlyProfiles'])->name('admin.elderly-profiles');
     Route::patch('elderly-profiles/{profile}/status', [AdminController::class, 'updateProfileStatus'])->name('admin.elderly-profiles.update-status');
+    Route::patch('elderly-profiles/{profile}', [AdminController::class, 'updateProfile'])->name('admin.elderly-profiles.update');
+    Route::delete('elderly-profiles/{profile}', [AdminController::class, 'deleteProfile'])->name('admin.elderly-profiles.delete');
+    Route::post('sync-elderly-profiles', [AdminController::class, 'syncFromSupabase'])->name('admin.elderly-profiles.sync');
     
     // Admin logout
     Route::post('logout', [AdminController::class, 'logout'])->name('admin.logout');

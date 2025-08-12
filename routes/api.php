@@ -25,10 +25,10 @@ Route::post('/check-supabase-user', [AuthController::class, 'checkSupabaseUser']
 Route::post('/check-public-users', [AuthController::class, 'checkPublicUsers']);
 Route::post('/sync-from-supabase-to-laravel', [AuthController::class, 'syncFromSupabaseToLaravel']);
 
-// Elderly Profiles API routes - Protected by authentication
-Route::middleware('auth:sanctum')->group(function () {
+// Elderly Profiles API routes - Protected by Supabase authentication
+Route::middleware('supabase.auth')->group(function () {
     Route::apiResource('elderly-profiles', ElderlyProfileController::class);
-    Route::patch('elderly-profiles/{elderlyProfile}/deactivate', [ElderlyProfileController::class, 'deactivate']);
+    Route::patch('elderly-profiles/{elderlyProfile}/status', [ElderlyProfileController::class, 'updateStatus']);
 });
 
 Route::get('/test-auth-flow', function() {

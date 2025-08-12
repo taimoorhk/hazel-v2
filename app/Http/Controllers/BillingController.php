@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 use App\Models\User;
@@ -13,10 +14,20 @@ class BillingController extends Controller
     /**
      * Show billing dashboard
      */
-    public function index(Request $request): Response
+    public function index(Request $request): Response|RedirectResponse
     {
+        // Try to get user from Laravel session first
         $user = $request->user();
         
+        // If no user in Laravel session, try to get from Supabase header
+        if (!$user) {
+            $supabaseEmail = $request->header('X-Supabase-Email');
+            if ($supabaseEmail) {
+                $user = \App\Models\User::where('email', $supabaseEmail)->first();
+            }
+        }
+        
+        // If still no user, redirect to login
         if (!$user) {
             return redirect()->route('login');
         }
@@ -67,7 +78,7 @@ class BillingController extends Controller
     /**
      * Show billing success page
      */
-    public function success(Request $request): Response
+    public function success(Request $request): Response|RedirectResponse
     {
         $sessionId = $request->query('session_id');
         
@@ -79,7 +90,7 @@ class BillingController extends Controller
     /**
      * Show billing cancel page
      */
-    public function cancel(): Response
+    public function cancel(): Response|RedirectResponse
     {
         return Inertia::render('BillingCancel');
     }
@@ -89,7 +100,16 @@ class BillingController extends Controller
      */
     public function cancelSubscription(Request $request)
     {
+        // Try to get user from Laravel session first
         $user = $request->user();
+        
+        // If no user in Laravel session, try to get from Supabase header
+        if (!$user) {
+            $supabaseEmail = $request->header('X-Supabase-Email');
+            if ($supabaseEmail) {
+                $user = \App\Models\User::where('email', $supabaseEmail)->first();
+            }
+        }
         
         if (!$user) {
             return response()->json(['error' => 'User not authenticated'], 401);
@@ -114,7 +134,16 @@ class BillingController extends Controller
      */
     public function resumeSubscription(Request $request)
     {
+        // Try to get user from Laravel session first
         $user = $request->user();
+        
+        // If no user in Laravel session, try to get from Supabase header
+        if (!$user) {
+            $supabaseEmail = $request->header('X-Supabase-Email');
+            if ($supabaseEmail) {
+                $user = \App\Models\User::where('email', $supabaseEmail)->first();
+            }
+        }
         
         if (!$user) {
             return response()->json(['error' => 'User not authenticated'], 401);
@@ -139,7 +168,16 @@ class BillingController extends Controller
      */
     public function updatePaymentMethod(Request $request)
     {
+        // Try to get user from Laravel session first
         $user = $request->user();
+        
+        // If no user in Laravel session, try to get from Supabase header
+        if (!$user) {
+            $supabaseEmail = $request->header('X-Supabase-Email');
+            if ($supabaseEmail) {
+                $user = \App\Models\User::where('email', $supabaseEmail)->first();
+            }
+        }
         
         if (!$user) {
             return response()->json(['error' => 'User not authenticated'], 401);

@@ -3,247 +3,229 @@
 namespace App\Http\Controllers;
 
 use App\Models\ElderlyProfile;
+use App\Services\ElderlyProfileRealtimeService;
 use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Validation\ValidationException;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
+use Inertia\Inertia;
 
 class ElderlyProfileController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Store a newly created elderly profile
      */
-    public function index(): JsonResponse
+    public function store(Request $request)
     {
-        $userEmail = auth()->user()->email ?? request()->user()->email;
-        
-        $elderlyProfiles = ElderlyProfile::where('associated_account_email', $userEmail)
-            ->orderBy('created_at', 'desc')
-            ->get();
-        
-        return response()->json([
-            'success' => true,
-            'data' => $elderlyProfiles
+        // Get user from middleware
+        $user = $request->get('auth_user');
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not authenticated'
+            ], 401);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'name' => 'nullable|string|max:255',
+            'email' => 'required|email|max:255|unique:elderly_profiles,email',
+            'phone' => 'nullable|string|max:20',
+            'status' => 'required|in:active,inactive,pending',
+            'associated_account_email' => 'required|email|max:255',
         ]);
-    }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request): JsonResponse
-    {
         try {
-            $validated = $request->validate([
-                'name' => 'required|string|max:255',
-                'email' => 'required|email|unique:elderly_profiles,email',
-                'phone' => 'nullable|string|max:20',
-            ]);
+            $profile = ElderlyProfile::create($request->all());
 
-            // Always set temporary_role to 'elderly user'
-            $validated['temporary_role'] = 'elderly user';
-            
-            // Set the associated_account_email from the authenticated user
-            $validated['associated_account_email'] = auth()->user()->email ?? $request->user()->email;
-
-            $elderlyProfile = ElderlyProfile::create($validated);
+            // Sync to Supabase
+            $realtimeService = new ElderlyProfileRealtimeService();
+            $realtimeService->pushToSupabase($profile, 'insert');
 
             return response()->json([
                 'success' => true,
-                'message' => 'Elderly profile created successfully',
-                'data' => $elderlyProfile
+                'message' => 'Profile created successfully',
+                'profile' => $profile
             ], 201);
 
-        } catch (ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $e->errors()
-            ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to create elderly profile',
-                'error' => $e->getMessage()
+                'message' => 'Failed to create profile: ' . $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Display the specified resource.
+     * Update the specified elderly profile
      */
-    public function show(ElderlyProfile $elderlyProfile): JsonResponse
+    public function update(Request $request, ElderlyProfile $elderlyProfile)
     {
-        // Check if the user owns this profile
-        $userEmail = auth()->user()->email ?? request()->user()->email;
-        if ($elderlyProfile->associated_account_email !== $userEmail) {
+        // Get user from middleware
+        $user = $request->get('auth_user');
+        if (!$user) {
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized: You can only view your own elderly profiles'
+                'message' => 'User not authenticated'
+            ], 401);
+        }
+
+        // Check if user can edit this profile
+        Log::info('ElderlyProfileController: Checking authorization', [
+            'profile_associated_email' => $elderlyProfile->associated_account_email,
+            'user_email' => $user->email,
+            'match' => $elderlyProfile->associated_account_email === $user->email
+        ]);
+        
+        if ($elderlyProfile->associated_account_email !== $user->email) {
+            Log::warning('ElderlyProfileController: Authorization failed', [
+                'profile_associated_email' => $elderlyProfile->associated_account_email,
+                'user_email' => $user->email
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized to edit this profile'
             ], 403);
         }
 
-        return response()->json([
-            'success' => true,
-            'data' => $elderlyProfile
+        $validator = Validator::make($request->all(), [
+            'name' => 'nullable|string|max:255',
+            'email' => 'required|email|max:255|unique:elderly_profiles,email,' . $profile->id,
+            'phone' => 'nullable|string|max:20',
+            'status' => 'required|in:active,inactive,pending',
+            'associated_account_email' => 'required|email|max:255',
         ]);
-    }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, ElderlyProfile $elderlyProfile): JsonResponse
-    {
-        try {
-            // Check if the user owns this profile
-            $userEmail = auth()->user()->email ?? $request->user()->email;
-            if ($elderlyProfile->associated_account_email !== $userEmail) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized: You can only update your own elderly profiles'
-                ], 403);
-            }
-
-            $validated = $request->validate([
-                'name' => 'required|string|max:255',
-                'email' => 'required|email|unique:elderly_profiles,email,' . $elderlyProfile->id,
-                'phone' => 'nullable|string|max:20',
-            ]);
-
-            // Always set temporary_role to 'elderly user'
-            $validated['temporary_role'] = 'elderly user';
-            
-            // Maintain the associated_account_email
-            $validated['associated_account_email'] = $elderlyProfile->associated_account_email;
-
-            $elderlyProfile->update($validated);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Elderly profile updated successfully',
-                'data' => $elderlyProfile
-            ]);
-
-        } catch (ValidationException $e) {
+        if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $e->errors()
+                'errors' => $validator->errors()
             ], 422);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update elderly profile',
-                'error' => $e->getMessage()
-            ], 500);
         }
-    }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(ElderlyProfile $elderlyProfile): JsonResponse
-    {
         try {
-            // Check if the user owns this profile
-            $userEmail = auth()->user()->email ?? request()->user()->email;
-            if ($elderlyProfile->associated_account_email !== $userEmail) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized: You can only delete your own elderly profiles'
-                ], 403);
-            }
+            $elderlyProfile->update($request->all());
 
-            $elderlyProfile->delete();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Elderly profile deleted successfully'
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to delete elderly profile',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Deactivate an elderly profile and sync with Supabase.
-     */
-    public function deactivate(ElderlyProfile $elderlyProfile): JsonResponse
-    {
-        try {
-            // Check if the user owns this profile
-            $userEmail = auth()->user()->email ?? request()->user()->email;
-            if ($elderlyProfile->associated_account_email !== $userEmail) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized: You can only deactivate your own elderly profiles'
-                ], 403);
-            }
-
-            // Update the status to 'deactivated' in Laravel
-            $elderlyProfile->update(['status' => 'deactivated']);
-
-            // Sync with Supabase
-            $supabaseUrl = config('services.supabase.url');
-            $supabaseKey = config('services.supabase.service_role_key');
-
-            if (!$supabaseUrl || !$supabaseKey) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Supabase configuration not found'
-                ], 500);
-            }
-
-            // Update the profile in Supabase
-            $response = Http::withHeaders([
-                'apikey' => $supabaseKey,
-                'Authorization' => 'Bearer ' . $supabaseKey,
-                'Content-Type' => 'application/json',
-                'Prefer' => 'return=minimal'
-            ])->patch($supabaseUrl . '/rest/v1/elderly_profiles?id=eq.' . $elderlyProfile->id, [
-                'status' => 'deactivated',
-                'updated_at' => now()->toISOString()
-            ]);
-
-            if (!$response->successful()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to sync with Supabase',
-                    'error' => $response->body()
-                ], 500);
+            // Sync to Supabase
+            try {
+                $realtimeService = new ElderlyProfileRealtimeService();
+                $syncResult = $realtimeService->pushToSupabase($elderlyProfile, 'update');
+                
+                if (!$syncResult) {
+                    Log::warning('Profile updated in Laravel but Supabase sync failed', [
+                        'profile_id' => $elderlyProfile->id,
+                        'email' => $elderlyProfile->email
+                    ]);
+                }
+            } catch (\Exception $syncError) {
+                Log::error('Supabase sync error during profile update', [
+                    'profile_id' => $elderlyProfile->id,
+                    'email' => $elderlyProfile->email,
+                    'error' => $syncError->getMessage()
+                ]);
+                // Don't fail the entire request if Supabase sync fails
             }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Elderly profile deactivated successfully and synced with Supabase',
-                'data' => $elderlyProfile->fresh()
+                'message' => 'Profile updated successfully',
+                'profile' => $elderlyProfile
             ]);
 
         } catch (\Exception $e) {
+            Log::error('Profile update failed', [
+                'profile_id' => $elderlyProfile->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to deactivate elderly profile',
-                'error' => $e->getMessage()
+                'message' => 'Failed to update profile: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+
+    /**
+     * Update the status of an elderly profile
+     */
+    public function updateStatus(Request $request, ElderlyProfile $elderlyProfile)
+    {
+        // Get user from middleware
+        $user = $request->get('auth_user');
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not authenticated'
+            ], 401);
+        }
+
+        // Check if user can update this profile
+        if ($elderlyProfile->associated_account_email !== $user->email) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized to edit this profile'
+            ], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'status' => 'required|in:active,inactive,pending',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $elderlyProfile->update(['status' => $request->status]);
+
+            // Sync to Supabase
+            try {
+                $realtimeService = new ElderlyProfileRealtimeService();
+                $syncResult = $realtimeService->pushToSupabase($elderlyProfile, 'update');
+                
+                if (!$syncResult) {
+                    Log::warning('Profile status updated in Laravel but Supabase sync failed', [
+                        'profile_id' => $elderlyProfile->id,
+                        'email' => $elderlyProfile->email
+                    ]);
+                }
+            } catch (\Exception $syncError) {
+                Log::error('Supabase sync error during profile status update', [
+                    'profile_id' => $elderlyProfile->id,
+                    'email' => $elderlyProfile->email,
+                    'error' => $syncError->getMessage()
+                ]);
+                // Don't fail the entire request if Supabase sync fails
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Profile status updated successfully',
+                'profile' => $elderlyProfile
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Profile status update failed', [
+                'profile_id' => $elderlyProfile->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update profile status: ' . $e->getMessage()
             ], 500);
         }
     }

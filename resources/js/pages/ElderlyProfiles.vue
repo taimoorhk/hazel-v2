@@ -21,6 +21,7 @@ interface ElderlyProfile {
   status: string;
   created_at: string;
   updated_at: string;
+  associated_account_email?: string;
 }
 
 useAuthGuard();
@@ -35,24 +36,31 @@ const roleFilter = ref('');
 const registrationFilter = ref('');
 const activityFilter = ref('');
 const statusFilter = ref('');
-const deactivatingProfile = ref<number | null>(null);
+
 const openDropdown = ref<number | null>(null);
+
+// Modal states
+const showAddModal = ref(false);
+const showEditModal = ref(false);
+const currentProfile = ref<ElderlyProfile | null>(null);
+const isSaving = ref(false);
+
+// Form data
+const form = ref({
+  name: '',
+  email: '',
+  phone: '',
+  status: 'active',
+  associated_account_email: '',
+});
+
+// Form validation
+const formErrors = ref<Record<string, string>>({});
 
 // Realtime subscription
 let realtimeChannel: any = null;
 
 onMounted(async () => {
-  const meta = user.value?.user_metadata;
-  if (meta && meta.role === 'Normal User') {
-    // Redirect Normal Users to dashboard with access denied message
-    inertiaRouter.visit('/dashboard', {
-      data: {
-        message: 'Access denied. Elderly Profiles are not available for Normal Users.'
-      }
-    });
-    return;
-  }
-
   // Wait for user to be loaded
   if (!user.value) {
     console.log('Waiting for user to be loaded...');
@@ -94,6 +102,182 @@ const toggleDropdown = (profileId: number, event: Event) => {
   openDropdown.value = openDropdown.value === profileId ? null : profileId;
 };
 
+// Modal management
+const openAddUserForm = async () => {
+  resetForm();
+  // Get current user email from Supabase session
+  const { data: { session } } = await supabase.auth.getSession();
+  const currentUserEmail = session?.user?.email;
+  form.value.associated_account_email = currentUserEmail || '';
+  showAddModal.value = true;
+};
+
+const openEditForm = (profile: ElderlyProfile) => {
+  currentProfile.value = profile;
+  form.value = {
+    name: profile.name || '',
+    email: profile.email,
+    phone: profile.phone || '',
+    status: profile.status || 'active',
+    associated_account_email: profile.associated_account_email || '',
+  };
+  showEditModal.value = true;
+};
+
+const closeModal = () => {
+  showAddModal.value = false;
+  showEditModal.value = false;
+  currentProfile.value = null;
+  resetForm();
+};
+
+const resetForm = () => {
+  form.value = {
+    name: '',
+    email: '',
+    phone: '',
+    status: 'active',
+    associated_account_email: '',
+  };
+  formErrors.value = {};
+};
+
+// Profile operations
+const saveProfile = async () => {
+  try {
+    isSaving.value = true;
+    formErrors.value = {};
+
+    // Get current user email from Supabase session
+    const { data: { session } } = await supabase.auth.getSession();
+    const currentUserEmail = session?.user?.email;
+    
+    console.log('Current user email:', currentUserEmail);
+    console.log('Form data:', form.value);
+
+    if (!currentUserEmail) {
+      throw new Error('User not authenticated');
+    }
+
+    // Add the associated account email to the form data
+    const profileData = {
+      ...form.value,
+      associated_account_email: currentUserEmail,
+      updated_at: new Date().toISOString()
+    };
+
+    let result;
+    
+    if (currentProfile.value) {
+      // Update existing profile - preserve all existing fields and only update changed ones
+      console.log('Updating profile:', currentProfile.value.id);
+      
+      // First, get the current profile data to preserve existing fields
+      const { data: existingProfile, error: fetchError } = await supabase
+        .from('elderly_profiles')
+        .select('*')
+        .eq('id', currentProfile.value.id)
+        .single();
+      
+      if (fetchError) throw fetchError;
+      
+      // Merge existing data with form data, preserving all existing fields
+      const updateData = {
+        ...existingProfile, // Keep all existing fields (story, created_at, etc.)
+        ...profileData, // Override with form data
+        updated_at: new Date().toISOString() // Update timestamp
+      };
+      
+      console.log('Preserving existing data:', existingProfile);
+      console.log('Update data:', updateData);
+      
+      const { data, error } = await supabase
+        .from('elderly_profiles')
+        .update(updateData)
+        .eq('id', currentProfile.value.id)
+        .eq('associated_account_email', currentUserEmail) // Security check
+        .select()
+        .single();
+      
+      if (error) throw error;
+      result = data;
+    } else {
+      // Create new profile
+      console.log('Creating new profile');
+      const { data, error } = await supabase
+        .from('elderly_profiles')
+        .insert([profileData])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      result = data;
+    }
+
+    console.log('Profile saved successfully:', result);
+    
+    // Success - close modal and refresh
+    closeModal();
+    await fetchElderlyProfiles();
+    
+  } catch (error: any) {
+    console.error('Error saving profile:', error);
+    formErrors.value = { general: error.message || 'An error occurred while saving' };
+  } finally {
+    isSaving.value = false;
+  }
+};
+
+const updateProfileStatus = async (profile: ElderlyProfile, newStatus: string) => {
+  try {
+    // Get current user email from Supabase session
+    const { data: { session } } = await supabase.auth.getSession();
+    const currentUserEmail = session?.user?.email;
+    
+    if (!currentUserEmail) {
+      throw new Error('User not authenticated');
+    }
+
+    console.log('Updating profile status:', profile.id, 'to', newStatus);
+
+    // First, get the current profile data to preserve existing fields
+    const { data: existingProfile, error: fetchError } = await supabase
+      .from('elderly_profiles')
+      .select('*')
+      .eq('id', profile.id)
+      .single();
+    
+    if (fetchError) throw fetchError;
+    
+    // Only update the status field, preserve everything else
+    const updateData = {
+      ...existingProfile, // Keep all existing fields (story, created_at, etc.)
+      status: newStatus,
+      updated_at: new Date().toISOString()
+    };
+    
+    console.log('Preserving existing data for status update:', existingProfile);
+    console.log('Status update data:', updateData);
+
+    const { data, error } = await supabase
+      .from('elderly_profiles')
+      .update(updateData)
+      .eq('id', profile.id)
+      .eq('associated_account_email', currentUserEmail) // Security check
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    console.log('Profile status updated successfully:', data);
+    await fetchElderlyProfiles(); // Refresh the list
+    
+  } catch (error: any) {
+    console.error('Error updating status:', error);
+    // You could show a toast notification here
+  }
+};
+
 const setupRealtimeSubscription = () => {
   realtimeChannel = supabase
     .channel('elderly_profiles_changes')
@@ -118,53 +302,24 @@ const fetchElderlyProfiles = async () => {
     loading.value = true;
     error.value = null;
 
-    // Get current user's email from Supabase
-    const currentUserEmail = user.value?.email;
+    // Get current user's email from Supabase session
+    const { data: { session } } = await supabase.auth.getSession();
+    const currentUserEmail = session?.user?.email;
+    
     console.log('Current user email:', currentUserEmail);
-    console.log('Current user object:', user.value);
     
     if (!currentUserEmail) {
       throw new Error('User not authenticated');
     }
 
-    // Wait for Supabase to be ready
-    const { data: { session } } = await supabase.auth.getSession();
-    console.log('Supabase session:', session);
-    
-    if (!session) {
-      throw new Error('No active Supabase session');
-    }
+    console.log('Fetching profiles for:', currentUserEmail);
 
-    console.log('Supabase session found, fetching profiles for:', currentUserEmail);
-
-    // Try to fetch profiles with authentication
-    let { data, error: fetchError } = await supabase
+    // Fetch profiles directly from Supabase
+    const { data, error: fetchError } = await supabase
       .from('elderly_profiles')
       .select('*')
       .eq('associated_account_email', currentUserEmail)
       .order('created_at', { ascending: false });
-
-    console.log('Supabase query result:', { data, error: fetchError });
-
-    // If there's an RLS error, try without the filter to see if it's a policy issue
-    if (fetchError && fetchError.code === 'PGRST116') {
-      console.log('RLS policy error detected, trying alternative approach...');
-      
-      // Try to get all profiles and filter client-side
-      const { data: allData, error: allError } = await supabase
-        .from('elderly_profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (allError) {
-        throw allError;
-      }
-      
-      // Filter client-side
-      data = allData?.filter(profile => profile.associated_account_email === currentUserEmail) || [];
-      fetchError = null;
-      console.log('Client-side filtered data:', data);
-    }
 
     if (fetchError) {
       console.error('Supabase fetch error:', fetchError);
@@ -179,60 +334,28 @@ const fetchElderlyProfiles = async () => {
       name: profile.name || profile.email.split('@')[0], // Use name field, fallback to email prefix
       email: profile.email,
       avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name || profile.email.split('@')[0])}&background=random&size=128`,
-      lastActivity: getLastActivityText(profile.updated_at),
-      lastActivityType: getLastActivityType(profile.updated_at),
-      registered: formatDate(profile.created_at),
-      role: profile.temporary_role || 'elderly user',
-      phone: profile.phone,
+      lastActivity: profile.last_activity || 'Never',
+      lastActivityType: profile.last_activity ? 'recent' : 'old',
+      registered: profile.created_at ? new Date(profile.created_at).toLocaleDateString() : 'Unknown',
+      role: profile.role || 'User',
+      phone: profile.phone || '',
       status: profile.status || 'active',
       created_at: profile.created_at,
-      updated_at: profile.updated_at
+      updated_at: profile.updated_at,
+      associated_account_email: profile.associated_account_email
     }));
 
     console.log('Transformed profiles:', profiles.value);
-
-  } catch (err) {
-    console.error('Error fetching elderly profiles:', err);
-    error.value = err instanceof Error ? err.message : 'Failed to load elderly profiles';
+    
+  } catch (err: any) {
+    console.error('Error fetching profiles:', err);
+    error.value = err.message || 'Failed to fetch profiles';
   } finally {
     loading.value = false;
   }
 };
 
-const deactivateProfile = async (profileId: number) => {
-  try {
-    deactivatingProfile.value = profileId;
-    openDropdown.value = null; // Close dropdown
-    
-    const response = await fetch(`/api/elderly-profiles/${profileId}/deactivate`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-      },
-    });
 
-    const result = await response.json();
-
-    if (result.success) {
-      // Update the profile status locally
-      const profileIndex = profiles.value.findIndex(p => p.id === profileId);
-      if (profileIndex !== -1) {
-        profiles.value[profileIndex].status = 'deactivated';
-      }
-      
-      // Show success message
-      alert('Profile deactivated successfully!');
-    } else {
-      throw new Error(result.message || 'Failed to deactivate profile');
-    }
-  } catch (err) {
-    console.error('Error deactivating profile:', err);
-    alert(err instanceof Error ? err.message : 'Failed to deactivate profile');
-  } finally {
-    deactivatingProfile.value = null;
-  }
-};
 
 const getLastActivityText = (updatedAt: string) => {
   const now = new Date();
@@ -270,44 +393,7 @@ const clearFilters = () => {
   statusFilter.value = '';
 };
 
-const openAddUserForm = () => {
-  window.open('https://form.fillout.com/t/5WbxT5J6gxus', '_blank');
-};
 
-const createElderlyProfile = async (profileData: { name: string; email: string; phone?: string }) => {
-  try {
-    const currentUserEmail = user.value?.email;
-    if (!currentUserEmail) {
-      throw new Error('User not authenticated');
-    }
-
-    const { data, error } = await supabase
-      .from('elderly_profiles')
-      .insert([
-        {
-          name: profileData.name,
-          email: profileData.email,
-          phone: profileData.phone || null,
-          temporary_role: 'elderly user',
-          status: 'active',
-          associated_account_email: currentUserEmail
-        }
-      ])
-      .select();
-
-    if (error) {
-      throw error;
-    }
-
-    // Refresh the profiles list
-    await fetchElderlyProfiles();
-
-    return data[0];
-  } catch (err) {
-    console.error('Error creating elderly profile:', err);
-    throw err;
-  }
-};
 
 // Computed properties for filtering
 const filteredProfiles = computed(() => {
@@ -484,13 +570,28 @@ const filteredProfiles = computed(() => {
                 class="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-10 min-w-[120px]"
               >
                 <button 
-                  v-if="profile.status === 'active'"
-                  @click="deactivateProfile(profile.id)"
-                  :disabled="deactivatingProfile === profile.id"
-                  class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  @click="openEditForm(profile)"
+                  class="w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50"
                 >
-                  <span v-if="deactivatingProfile === profile.id">Deactivating...</span>
-                  <span v-else>Deactivate</span>
+                  Edit Profile
+                </button>
+                
+                <hr class="my-1 border-gray-200" />
+                
+                <button 
+                  v-if="profile.status === 'active'"
+                  @click="updateProfileStatus(profile, 'inactive')"
+                  class="w-full text-left px-4 py-2 text-sm text-orange-600 hover:bg-orange-50"
+                >
+                  Deactivate
+                </button>
+                
+                <button 
+                  v-else
+                  @click="updateProfileStatus(profile, 'active')"
+                  class="w-full text-left px-4 py-2 text-sm text-green-600 hover:bg-green-50"
+                >
+                  Activate
                 </button>
               </div>
             </div>
@@ -514,6 +615,176 @@ const filteredProfiles = computed(() => {
               </span>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Profile Modal -->
+    <div v-if="showAddModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+      <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Add New Profile</h3>
+          
+          <form @submit.prevent="saveProfile" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+              <input
+                v-model="form.name"
+                type="text"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter name"
+              />
+              <span v-if="formErrors.name" class="text-red-500 text-xs">{{ formErrors.name }}</span>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input
+                v-model="form.email"
+                type="email"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter email"
+                required
+              />
+              <span v-if="formErrors.email" class="text-red-500 text-xs">{{ formErrors.email }}</span>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+              <input
+                v-model="form.phone"
+                type="tel"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter phone number"
+              />
+              <span v-if="formErrors.phone" class="text-red-500 text-xs">{{ formErrors.phone }}</span>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <select
+                v-model="form.status"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                required
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="pending">Pending</option>
+              </select>
+              <span v-if="formErrors.status" class="text-red-500 text-xs">{{ formErrors.status }}</span>
+            </div>
+            
+            <div v-if="formErrors.general" class="text-red-500 text-sm">{{ formErrors.general }}</div>
+            
+            <div class="flex justify-end space-x-3 pt-4">
+              <button
+                type="button"
+                @click="closeModal"
+                class="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                :disabled="isSaving"
+                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              >
+                <span v-if="isSaving" class="flex items-center gap-2">
+                  <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Saving...
+                </span>
+                <span v-else>Add Profile</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div v-if="showEditModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+      <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Edit Profile</h3>
+          
+          <form @submit.prevent="saveProfile" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+              <input
+                v-model="form.name"
+                type="text"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter name"
+              />
+              <span v-if="formErrors.name" class="text-red-500 text-xs">{{ formErrors.name }}</span>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input
+                v-model="form.email"
+                type="email"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter email"
+                required
+              />
+              <span v-if="formErrors.email" class="text-red-500 text-xs">{{ formErrors.email }}</span>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+              <input
+                v-model="form.phone"
+                type="tel"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter phone number"
+              />
+              <span v-if="formErrors.phone" class="text-red-500 text-xs">{{ formErrors.phone }}</span>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <select
+                v-model="form.status"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                required
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="pending">Pending</option>
+              </select>
+              <span v-if="formErrors.status" class="text-red-500 text-xs">{{ formErrors.status }}</span>
+            </div>
+            
+            <div v-if="formErrors.general" class="text-red-500 text-sm">{{ formErrors.general }}</div>
+            
+            <div class="flex justify-end space-x-3 pt-4">
+              <button
+                type="button"
+                @click="closeModal"
+                class="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                :disabled="isSaving"
+                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              >
+                <span v-if="isSaving" class="flex items-center gap-2">
+                  <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Saving...
+                </span>
+                <span v-else>Save Changes</span>
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>

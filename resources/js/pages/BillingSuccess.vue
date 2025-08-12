@@ -60,6 +60,6 @@ const goToDashboard = () => {
 };
 
 const goToBilling = () => {
-  router.visit(route('billing.index'));
+  router.visit(route('billing'));
 };
 </script>

@@ -135,9 +135,9 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { router } from '@inertiajs/vue3';
-import AppLayout from '@/layouts/AppLayout.vue';
-import { Button } from '@/components/ui/button';
+import { router, usePage } from '@inertiajs/vue3';
+import AppLayout from '../layouts/AppLayout.vue';
+import { Button } from '../components/ui/button';
 
 interface Subscription {
   id: number;
@@ -160,15 +160,32 @@ interface PaymentMethod {
   };
 }
 
-interface Props {
-  user: any;
-  subscription: Subscription | null;
-  paymentMethod: PaymentMethod | null;
-  stripeKey: string;
-}
-
-const props = defineProps<Props>();
 const isLoading = ref(false);
+const subscription = ref<Subscription | null>(null);
+const paymentMethod = ref<PaymentMethod | null>(null);
+const stripeKey = ref('');
+
+// Mock data for now - in a real app, this would come from an API
+const mockSubscription: Subscription = {
+  id: 1,
+  stripe_id: 'sub_mock123',
+  status: 'active',
+  price: 'Premium Plan',
+  quantity: 1,
+  trial_ends_at: null,
+  ends_at: null,
+  created_at: new Date().toISOString(),
+};
+
+const mockPaymentMethod: PaymentMethod = {
+  type: 'card',
+  card: {
+    brand: 'visa',
+    last4: '4242',
+    exp_month: 12,
+    exp_year: 2025,
+  },
+};
 
 const formatStatus = (status: string): string => {
   const statusMap: Record<string, string> = {
@@ -211,7 +228,7 @@ const startSubscription = async () => {
     
     if (data.sessionId) {
       // Redirect to Stripe Checkout
-      const stripe = (window as any).Stripe(props.stripeKey);
+      const stripe = (window as any).Stripe(stripeKey.value);
       stripe.redirectToCheckout({
         sessionId: data.sessionId,
       });
@@ -281,6 +298,14 @@ onMounted(() => {
     // Stripe is now available globally
   };
   document.head.appendChild(script);
+  
+  // Initialize with mock data for now
+  subscription.value = mockSubscription;
+  paymentMethod.value = mockPaymentMethod;
+  stripeKey.value = 'pk_test_your_publishable_key_here'; // This should come from environment
+  
+  // TODO: In a real app, fetch actual subscription data from an API
+  // fetchSubscriptionData();
 });
 
 // Declare Stripe global for TypeScript
@@ -289,4 +314,7 @@ declare global {
     Stripe: any;
   }
 }
+
+// Declare route function for TypeScript
+declare function route(name: string, params?: any): string;
 </script> 
