@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Cashier\Billable;
 use App\Events\UserCreated;
 use App\Events\UserUpdated;
 use App\Events\UserDeleted;
@@ -15,7 +16,7 @@ use App\Events\UserDeleted;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, Billable;
 
     /**
      * The table associated with the model.

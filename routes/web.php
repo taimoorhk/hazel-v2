@@ -34,6 +34,22 @@ Route::get('/billing', function () {
     return Inertia::render('Billing');
 })->name('billing');
 
+// Stripe and Billing Routes
+Route::prefix('billing')->group(function () {
+    Route::get('/', [App\Http\Controllers\BillingController::class, 'index'])->name('billing.index');
+    Route::get('/success', [App\Http\Controllers\BillingController::class, 'success'])->name('billing.success');
+    Route::get('/cancel', [App\Http\Controllers\BillingController::class, 'cancel'])->name('billing.cancel');
+    Route::post('/cancel-subscription', [App\Http\Controllers\BillingController::class, 'cancelSubscription'])->name('billing.cancel-subscription');
+    Route::post('/resume-subscription', [App\Http\Controllers\BillingController::class, 'resumeSubscription'])->name('billing.resume-subscription');
+    Route::post('/update-payment-method', [App\Http\Controllers\BillingController::class, 'updatePaymentMethod'])->name('billing.update-payment-method');
+});
+
+// Stripe API Routes
+Route::prefix('stripe')->group(function () {
+    Route::post('/create-checkout-session', [App\Http\Controllers\StripeController::class, 'createCheckoutSession'])->name('stripe.create-checkout-session');
+    Route::post('/webhook', [App\Http\Controllers\StripeController::class, 'handleWebhook'])->name('stripe.webhook');
+});
+
 Route::get('/help', function () {
     return Inertia::render('Help');
 })->name('help');

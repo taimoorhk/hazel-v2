@@ -41,4 +41,12 @@ return [
         'anon_key' => env('SUPABASE_ANON_KEY'),
     ],
 
+    'stripe' => [
+        'key' => env('STRIPE_KEY'),
+        'secret' => env('STRIPE_SECRET'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+        'price_id' => env('STRIPE_PRICE_ID'),
+        'product_id' => env('STRIPE_PRODUCT_ID'),
+    ],
+
 ];
