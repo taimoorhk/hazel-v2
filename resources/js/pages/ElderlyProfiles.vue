@@ -45,6 +45,11 @@ const showEditModal = ref(false);
 const currentProfile = ref<ElderlyProfile | null>(null);
 const isSaving = ref(false);
 
+// Navigation function
+const openProfileDetail = (profileId: number) => {
+  window.location.href = `/elderly-profiles/${profileId}`;
+};
+
 // Form data
 const form = ref({
   name: '',
@@ -459,35 +464,35 @@ const filteredProfiles = computed(() => {
   <AppLayout>
     <Head title="Elderly Profiles" />
     <div class="p-8">
-      <h1 class="text-2xl font-bold mb-6">Elderly Profiles</h1>
+      <h1 class="text-2xl font-bold mb-6 text-[#061B2B]">Elderly Profiles</h1>
       
       <!-- Compact Single Line Filters -->
       <div class="flex items-center gap-2 mb-6 w-full">
         <!-- Filters -->
-        <select v-model="roleFilter" class="rounded-lg border border-gray-300 px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-black focus:border-black min-w-[90px] h-8">
+        <select v-model="roleFilter" class="rounded-lg border border-[#061B2B]/20 px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-[#2871B5] focus:border-[#2871B5] min-w-[90px] h-8 text-[#061B2B]">
           <option value="">Role</option>
           <option value="elderly user">Elderly User</option>
         </select>
         
-        <select v-model="statusFilter" class="rounded-lg border border-gray-300 px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-black focus:border-black min-w-[85px] h-8">
+        <select v-model="statusFilter" class="rounded-lg border border-[#061B2B]/20 px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-[#2871B5] focus:border-[#2871B5] min-w-[85px] h-8 text-[#061B2B]">
           <option value="">Status</option>
           <option value="active">Active</option>
           <option value="deactivated">Deactivated</option>
         </select>
         
-        <select v-model="registrationFilter" class="rounded-lg border border-gray-300 px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-black focus:border-black min-w-[110px] h-8">
+        <select v-model="registrationFilter" class="rounded-lg border border-[#061B2B]/20 px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-[#2871B5] focus:border-[#2871B5] min-w-[110px] h-8 text-[#061B2B]">
           <option value="">Registration</option>
           <option value="recent">Recent</option>
           <option value="old">Old</option>
         </select>
         
-        <select v-model="activityFilter" class="rounded-lg border border-gray-300 px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-black focus:border-black min-w-[95px] h-8">
+        <select v-model="activityFilter" class="rounded-lg border border-[#061B2B]/20 px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-[#2871B5] focus:border-[#2871B5] min-w-[95px] h-8 text-[#061B2B]">
           <option value="">Activity</option>
           <option value="recent">Recent</option>
           <option value="old">Old</option>
         </select>
         
-        <button @click="clearFilters" class="rounded-lg border border-gray-300 px-2.5 py-1.5 text-xs flex items-center gap-1 bg-white hover:bg-gray-50 hover:border-gray-400 min-w-[70px] h-8 transition-colors">
+        <button @click="clearFilters" class="rounded-lg border border-[#061B2B]/20 px-2.5 py-1.5 text-xs flex items-center gap-1 bg-white hover:bg-[#061B2B]/5 hover:border-[#061B2B]/40 min-w-[70px] h-8 transition-colors text-[#061B2B]">
           <span>Clear</span>
           <span class="text-sm">&times;</span>
         </button>
@@ -496,23 +501,23 @@ const filteredProfiles = computed(() => {
         <div class="flex-1"></div>
         
         <!-- Search and Actions -->
-        <input v-model="search" type="text" placeholder="Search profiles..." class="rounded-lg border border-gray-300 px-3 py-1.5 text-xs w-48 focus:outline-none focus:ring-1 focus:ring-black focus:border-black h-8" />
+        <input v-model="search" type="text" placeholder="Search profiles..." class="rounded-lg border border-[#061B2B]/20 px-3 py-1.5 text-xs w-48 focus:outline-none focus:ring-1 focus:ring-[#2871B5] focus:border-[#2871B5] h-8 text-[#061B2B]" />
         
-        <button class="rounded-lg border border-gray-300 px-2 py-1.5 flex items-center justify-center bg-white hover:bg-gray-50 hover:border-gray-400 h-8 w-8 transition-colors">
+        <button class="rounded-lg border border-[#061B2B]/20 px-2 py-1.5 flex items-center justify-center bg-white hover:bg-[#061B2B]/5 hover:border-[#061B2B]/40 h-8 w-8 transition-colors text-[#061B2B]">
           <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="2" rx="1" fill="currentColor"/><rect x="3" y="11" width="18" height="2" rx="1" fill="currentColor"/><rect x="3" y="17" width="18" height="2" rx="1" fill="currentColor"/></svg>
         </button>
         
-        <button @click="openAddUserForm" class="rounded-lg bg-gradient-to-r from-black to-neutral-800 text-white px-4 py-1.5 flex items-center gap-1.5 text-xs font-medium hover:from-neutral-800 hover:to-black whitespace-nowrap h-8 transition-colors">
+        <a href="https://form.fillout.com/t/5WbxT5J6gxus" target="_blank" rel="noopener noreferrer" class="rounded-lg bg-[#2871B5] text-white px-4 py-1.5 flex items-center gap-1.5 text-xs font-medium hover:bg-[#061B2B] whitespace-nowrap h-8 transition-colors">
           Add user
           <span class="text-sm">+</span>
-        </button>
+        </a>
       </div>
       
       <!-- Loading State -->
       <div v-if="loading" class="flex items-center justify-center py-12">
         <div class="text-center">
-          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-black mx-auto mb-4"></div>
-          <p class="text-gray-600">Loading elderly profiles...</p>
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2871B5] mx-auto mb-4"></div>
+          <p class="text-[#061B2B]/70">Loading elderly profiles...</p>
         </div>
       </div>
 
@@ -520,7 +525,7 @@ const filteredProfiles = computed(() => {
       <div v-else-if="error" class="flex items-center justify-center py-12">
         <div class="text-center">
           <p class="text-red-600 mb-4">{{ error }}</p>
-          <button @click="fetchElderlyProfiles" class="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800">
+          <button @click="fetchElderlyProfiles" class="px-4 py-2 bg-[#2871B5] text-white rounded-md hover:bg-[#061B2B]">
             Try Again
           </button>
         </div>
@@ -529,22 +534,27 @@ const filteredProfiles = computed(() => {
       <!-- Empty State -->
       <div v-else-if="filteredProfiles.length === 0" class="flex items-center justify-center py-12">
         <div class="text-center">
-          <p class="text-gray-600 mb-4">No elderly profiles found</p>
-          <button @click="openAddUserForm" class="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800">
+          <p class="text-[#061B2B]/70 mb-4">No elderly profiles found</p>
+          <a href="https://form.fillout.com/t/5WbxT5J6gxus" target="_blank" rel="noopener noreferrer" class="px-4 py-2 bg-[#2871B5] text-white rounded-md hover:bg-[#061B2B]">
             Add First Profile
-          </button>
+          </a>
         </div>
       </div>
 
       <!-- Profiles Grid -->
       <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        <div v-for="profile in filteredProfiles" :key="profile.id" class="rounded-xl border border-neutral-200 bg-white shadow-sm p-6 relative">
+        <div 
+          v-for="profile in filteredProfiles" 
+          :key="profile.id" 
+          class="rounded-xl border border-neutral-200 bg-white shadow-sm p-6 relative cursor-pointer hover:shadow-md hover:border-[#2871B5]/30 transition-all duration-200"
+          @click="openProfileDetail(profile.id)"
+        >
           <!-- Status Badge -->
           <div class="absolute top-4 right-4">
             <span :class="[
               'px-3 py-1 rounded-full text-xs font-medium',
               profile.status === 'active' 
-                ? 'bg-green-100 text-green-800' 
+                ? 'bg-[#2871B5]/10 text-[#2871B5]' 
                 : 'bg-red-100 text-red-800'
             ]">
               {{ profile.status === 'active' ? 'Active' : 'Deactivated' }}
@@ -554,33 +564,33 @@ const filteredProfiles = computed(() => {
           <div class="flex items-center gap-4 mb-4">
             <img :src="profile.avatar" alt="avatar" class="w-14 h-14 rounded-full object-cover border border-black" />
             <div class="flex-1">
-              <div class="font-semibold text-lg">{{ profile.name }}</div>
-              <div class="text-neutral-500 text-sm">{{ profile.email }}</div>
+              <div class="font-semibold text-lg text-[#061B2B]">{{ profile.name }}</div>
+              <div class="text-[#061B2B]/60 text-sm">{{ profile.email }}</div>
             </div>
             <div class="relative dropdown-container">
               <button 
-                @click="toggleDropdown(profile.id, $event)"
-                class="text-black hover:text-white hover:bg-gradient-to-r hover:from-black hover:to-neutral-800 p-2 rounded-full transition-colors"
+                @click.stop="toggleDropdown(profile.id, $event)"
+                class="text-[#061B2B] hover:text-white hover:bg-gradient-to-r hover:from-[#2871B5] hover:to-[#061B2B] p-2 rounded-full transition-colors"
               >
                 <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="19" r="1.5" fill="currentColor"/></svg>
               </button>
               <!-- Dropdown menu for actions -->
               <div 
                 v-if="openDropdown === profile.id"
-                class="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-10 min-w-[120px]"
+                class="absolute right-0 top-full mt-1 bg-white border border-[#061B2B]/20 rounded-lg shadow-lg py-1 z-10 min-w-[120px]"
               >
                 <button 
-                  @click="openEditForm(profile)"
-                  class="w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50"
+                  @click.stop="openEditForm(profile)"
+                  class="w-full text-left px-4 py-2 text-sm text-[#2871B5] hover:bg-[#2871B5]/10"
                 >
                   Edit Profile
                 </button>
                 
-                <hr class="my-1 border-gray-200" />
+                <hr class="my-1 border-[#061B2B]/20" />
                 
                 <button 
                   v-if="profile.status === 'active'"
-                  @click="updateProfileStatus(profile, 'inactive')"
+                  @click.stop="updateProfileStatus(profile, 'inactive')"
                   class="w-full text-left px-4 py-2 text-sm text-orange-600 hover:bg-orange-50"
                 >
                   Deactivate
@@ -588,8 +598,8 @@ const filteredProfiles = computed(() => {
                 
                 <button 
                   v-else
-                  @click="updateProfileStatus(profile, 'active')"
-                  class="w-full text-left px-4 py-2 text-sm text-green-600 hover:bg-green-50"
+                  @click.stop="updateProfileStatus(profile, 'active')"
+                  class="w-full text-left px-4 py-2 text-sm text-[#2871B5] hover:bg-[#2871B5]/10"
                 >
                   Activate
                 </button>
@@ -599,31 +609,39 @@ const filteredProfiles = computed(() => {
           <hr class="my-4 border-black/10" />
           <div class="flex items-center justify-between text-sm">
             <div>
-              <div class="text-neutral-400">Last Activity</div>
+              <div class="text-[#061B2B]/50">Last Activity</div>
               <div class="flex items-center gap-1">
-                <span :class="['h-2 w-2 rounded-full mr-1', profile.lastActivityType === 'recent' ? 'bg-black' : 'bg-black/30']"></span>
-                <span :class="profile.lastActivityType === 'recent' ? 'text-black' : 'text-black/50'">{{ profile.lastActivity }}</span>
+                <span :class="['h-2 w-2 rounded-full mr-1', profile.lastActivityType === 'recent' ? 'bg-[#2871B5]' : 'bg-[#061B2B]/30']"></span>
+                <span :class="profile.lastActivityType === 'recent' ? 'text-[#061B2B]' : 'text-[#061B2B]/50'">{{ profile.lastActivity }}</span>
               </div>
             </div>
             <div>
-              <div class="text-neutral-400">Registered</div>
-              <div>{{ profile.registered }}</div>
+              <div class="text-[#061B2B]/50">Registered</div>
+              <div class="text-[#061B2B]">{{ profile.registered }}</div>
             </div>
             <div>
-              <span class="px-4 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+              <span class="px-4 py-1 rounded-full text-xs font-medium bg-[#061B2B]/10 text-[#061B2B]">
                 {{ profile.role }}
               </span>
             </div>
+          </div>
+          
+          <!-- Click indicator -->
+          <div class="mt-4 pt-4 border-t border-neutral-200 flex items-center justify-between">
+            <span class="text-xs text-[#2871B5] font-medium">Click to view details</span>
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" class="text-[#2871B5]">
+              <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Add Profile Modal -->
-    <div v-if="showAddModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div v-if="showAddModal" class="fixed inset-0 bg-[#061B2B]/50 overflow-y-auto h-full w-full z-50">
       <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
         <div class="mt-3">
-          <h3 class="text-lg font-medium text-gray-900 mb-4">Add New Profile</h3>
+          <h3 class="text-lg font-medium text-[#061B2B] mb-4">Add New Profile</h3>
           
           <form @submit.prevent="saveProfile" class="space-y-4">
             <div>
@@ -680,14 +698,14 @@ const filteredProfiles = computed(() => {
               <button
                 type="button"
                 @click="closeModal"
-                class="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+                class="px-4 py-2 text-[#061B2B] bg-[#061B2B]/10 rounded-lg hover:bg-[#061B2B]/20 transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 :disabled="isSaving"
-                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                class="px-4 py-2 bg-[#2871B5] text-white rounded-lg hover:bg-[#061B2B] disabled:opacity-50 transition-colors"
               >
                 <span v-if="isSaving" class="flex items-center gap-2">
                   <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -705,10 +723,10 @@ const filteredProfiles = computed(() => {
     </div>
 
     <!-- Edit Profile Modal -->
-    <div v-if="showEditModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div v-if="showEditModal" class="fixed inset-0 bg-[#061B2B]/50 overflow-y-auto h-full w-full z-50">
       <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
         <div class="mt-3">
-          <h3 class="text-lg font-medium text-gray-900 mb-4">Edit Profile</h3>
+          <h3 class="text-lg font-medium text-[#061B2B] mb-4">Edit Profile</h3>
           
           <form @submit.prevent="saveProfile" class="space-y-4">
             <div>
@@ -765,14 +783,14 @@ const filteredProfiles = computed(() => {
               <button
                 type="button"
                 @click="closeModal"
-                class="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+                class="px-4 py-2 text-[#061B2B] bg-[#061B2B]/10 rounded-lg hover:bg-[#061B2B]/20 transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 :disabled="isSaving"
-                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                class="px-4 py-2 bg-[#2871B5] text-white rounded-lg hover:bg-[#061B2B] disabled:opacity-50 transition-colors"
               >
                 <span v-if="isSaving" class="flex items-center gap-2">
                   <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

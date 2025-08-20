@@ -18,6 +18,10 @@ Route::get('/elderly-profiles', function () {
     return inertia('ElderlyProfiles');
 })->name('elderly-profiles');
 
+Route::get('/elderly-profiles/{id}', function ($id) {
+    return inertia('ElderlyProfileDetail', ['id' => $id]);
+})->name('elderly-profiles.show');
+
 // User-side elderly profile management routes
 Route::prefix('elderly-profiles')->group(function () {
     Route::post('/', [App\Http\Controllers\ElderlyProfileController::class, 'store'])->name('elderly-profiles.store');

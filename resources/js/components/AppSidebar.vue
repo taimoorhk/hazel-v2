@@ -70,7 +70,7 @@ const filteredMainNavItems = computed(() => {
         <SidebarHeader>
             <SidebarMenu>
                 <SidebarMenuItem>
-                    <SidebarMenuButton size="lg" as-child>
+                    <SidebarMenuButton size="lg" as-child tooltip="Hazel Dashboard">
                         <Link :href="route('dashboard')">
                             <AppLogo />
                         </Link>

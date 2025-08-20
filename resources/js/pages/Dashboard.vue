@@ -90,32 +90,32 @@ const stats = [
         value: 14,
         change: -10.6,
         icon: 'users',
-        iconBg: 'bg-green-100',
-        iconColor: 'text-green-600',
+        iconBg: 'bg-[#2871B5]/10',
+        iconColor: 'text-[#2871B5]',
     },
     {
         title: 'Total Calls',
         value: 22,
         change: 27.5,
         icon: 'phone',
-        iconBg: 'bg-green-100',
-        iconColor: 'text-green-600',
+        iconBg: 'bg-[#2871B5]/10',
+        iconColor: 'text-[#2871B5]',
     },
     {
         title: 'Minutes Used',
         value: 16,
         change: -1.6,
         icon: 'clock',
-        iconBg: 'bg-green-100',
-        iconColor: 'text-green-600',
+        iconBg: 'bg-[#2871B5]/10',
+        iconColor: 'text-[#2871B5]',
     },
     {
         title: 'Credits Remaining',
         value: 20,
         change: 12.3,
         icon: 'wallet',
-        iconBg: 'bg-green-100',
-        iconColor: 'text-green-600',
+        iconBg: 'bg-[#2871B5]/10',
+        iconColor: 'text-[#2871B5]',
     },
 ];
 
@@ -176,31 +176,34 @@ const baseWheelConfig = {
         fontFamily: 'inherit',
         chart: {
             backgroundColor: 'false',
-            color: '#1A1A1Aff',
+            color: '#2871B5',
             animation: {
                 use: true,
                 speed: 0.5,
                 acceleration: 1
+            },
+            hover: {
+                enabled: true,
+                color: '#2871B5/90'
             },
             layout: {
                 wheel: {
                     ticks: {
                         type: 'classic' as const,
                         rounded: true,
-                        inactiveColor: '#e1e5e8',
-                        activeColor: '#00a53d',
-                        sizeRatio: 0.7,
-                        quantity: 100,
-                        strokeWidth: 5,
+                        inactiveColor: '#2871B5/20',
+                        activeColor: '#2871B5',
+                        sizeRatio: 0.78,
+                        quantity: 140,
+                        strokeWidth: 4,
                         gradient: {
-                            show: true,
-                            shiftHueIntensity: 10
+                            show: false
                         }
                     }
                 },
                 innerCircle: {
                     show: false,
-                    stroke: '#e1e5e8ff',
+                    stroke: '#2871B5',
                     strokeWidth: 1
                 },
                 percentage: {
@@ -208,7 +211,8 @@ const baseWheelConfig = {
                     fontSize: 48,
                     rounding: 0,
                     bold: true,
-                    formatter: null
+                    formatter: null,
+                    color: '#2871B5'
                 }
             }
         }
@@ -254,7 +258,7 @@ const baseWheelConfig = {
         },
         print: {
             allowTaint: false,
-            backgroundColor: '#FFFFFFff',
+            backgroundColor: '#2871B5/5',
             useCORS: false,
             onclone: null,
             scale: 2,
@@ -269,11 +273,15 @@ const tiremarksConfig = ref({
         fontFamily: 'inherit',
         chart: {
             backgroundColor: 'false',
-            color: '#1A1A1Aff',
+            color: '#2871B5',
             animation: {
                 use: true,
                 speed: 0.5,
                 acceleration: 1
+            },
+            hover: {
+                enabled: true,
+                color: '#2871B5/90'
             },
             layout: {
                 display: 'horizontal' as 'horizontal',
@@ -281,19 +289,20 @@ const tiremarksConfig = ref({
                 curved: false,
                 curveAngleX: 10,
                 curveAngleY: 10,
-                activeColor: '#00a53d',
-                inactiveColor: '#e1e5e8',
+                activeColor: '#2871B5',
+                inactiveColor: '#2871B5/20',
                 ticks: {
                     gradient: {
-                        show: true,
-                        shiftHueIntensity: 10
-                    }
+                        show: false
+                    },
+                    strokeWidth: 2,
+                    activeStrokeWidth: 3
                 }
             },
             percentage: {
                 show: true,
-                useGradientColor: true,
-                color: '#1A1A1Aff',
+                useGradientColor: false,
+                color: '#2871B5',
                 fontSize: 16,
                 bold: true,
                 rounding: 0,
@@ -345,7 +354,7 @@ const tiremarksConfig = ref({
         },
         print: {
             allowTaint: false,
-            backgroundColor: '#FFFFFFff',
+            backgroundColor: '#2871B5/5',
             useCORS: false,
             onclone: null,
             scale: 2,
@@ -559,12 +568,12 @@ onUnmounted(() => {
     <AppLayout>
         <Head title="Dashboard" />
         <div v-if="loading" class="flex items-center justify-center h-96">
-            <span class="text-lg text-gray-500">Loading session...</span>
+            <span class="text-lg text-[#2871B5]/70">Loading session...</span>
         </div>
         <div v-else-if="user" class="p-6">
-            <h1 class="text-2xl font-bold mb-4 flex items-center justify-between">
+            <h1 class="text-2xl font-bold mb-4 flex items-center justify-between text-black">
               <span>
-                Welcome, <span class="text-gray-500">{{
+                Welcome, <span class="text-gray-600">{{
                   realtimeUser && realtimeUser.user_metadata?.display_name ||
                   realtimeUser && realtimeUser.user_metadata?.name ||
                   user?.user_metadata?.display_name ||
@@ -573,7 +582,7 @@ onUnmounted(() => {
                   'User'
                 }}!</span>
               </span>
-              <button v-if="isNormalUser()" @click="showRoleChangeDialog = true" class="h-8 px-3 rounded-md bg-primary text-primary-foreground text-sm font-medium shadow-xs hover:bg-primary/90 transition-all">
+              <button v-if="isNormalUser()" @click="showRoleChangeDialog = true" class="h-8 px-3 rounded-md bg-[#2871B5] text-white text-sm font-medium shadow-xs hover:bg-[#2871B5]/80 transition-all">
                 Add More Profiles
               </button>
             </h1>
@@ -587,8 +596,8 @@ onUnmounted(() => {
                 <p class="mb-4">To add more profiles, your account role will be changed from <b>Normal User</b> to <b>Caregiver</b>.<br/>Do you accept this change?</p>
                 <div v-if="roleChangeError" class="text-red-600 mb-2">{{ roleChangeError }}</div>
                 <div class="flex justify-end gap-2">
-                  <button @click="showRoleChangeDialog = false" class="bg-gray-200 px-4 py-2 rounded text-sm">Cancel</button>
-                  <button :disabled="roleChangeLoading" @click="acceptRoleChange" class="bg-green-600 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-green-700">
+                  <button @click="showRoleChangeDialog = false" class="bg-[#2871B5]/10 text-[#2871B5] px-4 py-2 rounded text-sm hover:bg-[#2871B5]/20">Cancel</button>
+                  <button :disabled="roleChangeLoading" @click="acceptRoleChange" class="bg-[#2871B5] text-white px-4 py-2 rounded text-sm font-semibold hover:bg-[#2871B5]/80">
                     {{ roleChangeLoading ? 'Processing...' : 'Accept & Submit' }}
                   </button>
                 </div>
@@ -601,8 +610,8 @@ onUnmounted(() => {
               <Card>
                 <CardContent class="flex items-center justify-center py-8">
                   <div class="text-center">
-                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-                    <p class="text-sm text-gray-600">Checking your profile...</p>
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2871B5] mx-auto mb-2"></div>
+                    <p class="text-sm text-[#2871B5]/70">Checking your profile...</p>
                   </div>
                 </CardContent>
               </Card>
@@ -614,7 +623,7 @@ onUnmounted(() => {
                 <CardContent class="flex flex-col md:flex-row items-center justify-between gap-4 py-4">
                   <div class="flex-1 text-left">
                     <p class="text-base font-semibold mb-1">Set up your calling profile</p>
-                    <p class="text-sm text-blue-800">To get started, please add your details using the form below. This helps us personalize your experience.</p>
+                    <p class="text-sm text-[#2871B5]">To get started, please add your details using the form below. This helps us personalize your experience.</p>
                   </div>
                   <div class="flex items-center h-full">
                     <Button :disabled="onboardingLoading" @click="openOnboardingFormLink" size="sm" variant="default">
@@ -634,9 +643,9 @@ onUnmounted(() => {
                       <div class="text-2xl font-bold leading-tight mt-0 mb-0">{{ stat.value }}</div>
                       <div class="flex items-center gap-1 mt-0 text-xs font-medium"
                         :class="{
-                          'text-green-600': stat.change > 0,
-                          'text-red-600': stat.change < 0,
-                          'text-muted-foreground': stat.change === 0
+                          'text-[#2871B5]': stat.change > 0,
+                          'text-red-500': stat.change < 0,
+                          'text-[#2871B5]/60': stat.change === 0
                         }">
                         <span v-if="stat.change > 0">▲</span>
                         <span v-else-if="stat.change < 0">▼</span>
@@ -654,8 +663,8 @@ onUnmounted(() => {
                 <!-- Single chart card for normal users -->
                 <div class="w-[30%]">
                   <div class="flex items-center justify-between mb-2">
-                    <h2 class="text-lg font-semibold">Total Average Score</h2>
-                    <Link href="/elderly-profiles" class="text-blue-600 hover:text-blue-800 underline font-medium">View Report</Link>
+                    <h2 class="text-lg font-semibold text-[#2871B5]">Total Average Score</h2>
+                    <Link href="/elderly-profiles" class="text-[#2871B5] hover:text-[#2871B5]/80 underline font-medium">View Report</Link>
                   </div>
                   <Card class="flex flex-col items-center py-6">
                     <VueUiWheel :dataset="{ percentage: totalAverageScore }" :config="baseWheelConfig" />
@@ -663,13 +672,13 @@ onUnmounted(() => {
                 </div>
                 <!-- Combined stats component for normal users -->
                 <div class="w-[70%]">
-                  <h2 class="text-lg font-semibold mb-4">Your Monitoring Statistics</h2>
+                  <h2 class="text-lg font-semibold mb-4 text-[#2871B5]">Your Monitoring Statistics</h2>
                   <div class="grid grid-cols-2 gap-4">
                     <Card v-for="stat in userStats" :key="stat.title" class="p-4">
                       <div class="flex flex-col">
-                        <h3 class="text-sm font-medium text-gray-600 mb-1">{{ stat.title }}</h3>
-                        <div class="text-2xl font-bold text-gray-900 mb-2">{{ stat.value }}</div>
-                        <p class="text-xs text-gray-500">{{ stat.description }}</p>
+                        <h3 class="text-sm font-medium text-[#2871B5]/70 mb-1">{{ stat.title }}</h3>
+                        <div class="text-2xl font-bold text-[#2871B5] mb-2">{{ stat.value }}</div>
+                        <p class="text-xs text-[#2871B5]/50">{{ stat.description }}</p>
                       </div>
                     </Card>
                   </div>
@@ -680,11 +689,11 @@ onUnmounted(() => {
               <div v-else class="flex flex-row gap-6 mb-8">
                 <div class="w-[70%]">
                   <div class="flex items-center justify-between mb-2">
-                    <h2 class="text-lg font-semibold">Usage Overview</h2>
+                    <h2 class="text-lg font-semibold text-[#2871B5]">Usage Overview</h2>
                   </div>
                   <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <Card v-for="profile in elderlyProfiles" :key="profile.name" class="flex flex-col items-center py-6">
-                      <span class="mb-2 font-medium">{{ profile.name }}</span>
+                      <span class="mb-2 font-medium text-[#2871B5]">{{ profile.name }}</span>
                       <VueUiWheel :dataset="{ percentage: profile.score }" :config="baseWheelConfig" />
                     </Card>
                   </div>
@@ -692,7 +701,7 @@ onUnmounted(() => {
                 <div class="w-[30%]">
                   <Card>
                     <CardHeader>
-                      <CardTitle>Subscription Overview</CardTitle>
+                      <CardTitle class="text-[#2871B5]">Subscription Overview</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <VueUiTiremarks :dataset="{ percentage: 100 }" :config="tiremarksConfig" />
