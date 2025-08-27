@@ -22,6 +22,7 @@ interface ElderlyProfile {
   created_at: string;
   updated_at: string;
   associated_account_email?: string;
+  user_questions?: string;
 }
 
 useAuthGuard();
@@ -42,8 +43,10 @@ const openDropdown = ref<number | null>(null);
 // Modal states
 const showAddModal = ref(false);
 const showEditModal = ref(false);
+const showPersonalisationModal = ref(false);
 const currentProfile = ref<ElderlyProfile | null>(null);
 const isSaving = ref(false);
+const isPersonalising = ref(false);
 
 // Navigation function
 const openProfileDetail = (profileId: number) => {
@@ -59,11 +62,17 @@ const form = ref({
   associated_account_email: '',
 });
 
+// Personalisation form data
+const personalisationForm = ref({
+  user_questions: '',
+});
+
 // Form validation
 const formErrors = ref<Record<string, string>>({});
 
 // Realtime subscription
 let realtimeChannel: any = null;
+let periodicSyncInterval: NodeJS.Timeout | null = null;
 
 onMounted(async () => {
   // Wait for user to be loaded
@@ -75,6 +84,7 @@ onMounted(async () => {
 
   await fetchElderlyProfiles();
   setupRealtimeSubscription();
+  startPeriodicSync();
   
   // Add click outside listener
   document.addEventListener('click', handleClickOutside);
@@ -92,6 +102,7 @@ onUnmounted(() => {
   if (realtimeChannel) {
     supabase.removeChannel(realtimeChannel);
   }
+  stopPeriodicSync();
   document.removeEventListener('click', handleClickOutside);
 });
 
@@ -129,9 +140,18 @@ const openEditForm = (profile: ElderlyProfile) => {
   showEditModal.value = true;
 };
 
+const openPersonalisationForm = (profile: ElderlyProfile) => {
+  currentProfile.value = profile;
+  personalisationForm.value = {
+    user_questions: profile.user_questions || '',
+  };
+  showPersonalisationModal.value = true;
+};
+
 const closeModal = () => {
   showAddModal.value = false;
   showEditModal.value = false;
+  showPersonalisationModal.value = false;
   currentProfile.value = null;
   resetForm();
 };
@@ -283,9 +303,108 @@ const updateProfileStatus = async (profile: ElderlyProfile, newStatus: string) =
   }
 };
 
+const savePersonalisation = async () => {
+  try {
+    isPersonalising.value = true;
+    
+    if (!currentProfile.value) {
+      throw new Error('No profile selected');
+    }
+
+    // Get current user email from Supabase session
+    const { data: { session } } = await supabase.auth.getSession();
+    const currentUserEmail = session?.user?.email;
+    
+    if (!currentUserEmail) {
+      throw new Error('User not authenticated');
+    }
+
+    console.log('Saving personalisation for profile:', currentProfile.value.id);
+
+    // First, get the current profile data to preserve existing fields
+    const { data: existingProfile, error: fetchError } = await supabase
+      .from('elderly_profiles')
+      .select('*')
+      .eq('id', currentProfile.value.id)
+      .single();
+    
+    if (fetchError) throw fetchError;
+    
+    // Update only the user_questions field, preserve everything else
+    const updateData = {
+      ...existingProfile, // Keep all existing fields
+      user_questions: personalisationForm.value.user_questions,
+      updated_at: new Date().toISOString()
+    };
+    
+    console.log('Preserving existing data for personalisation update:', existingProfile);
+    console.log('Personalisation update data:', updateData);
+
+    // Update the elderly_profiles table
+    const { data, error } = await supabase
+      .from('elderly_profiles')
+      .update(updateData)
+      .eq('id', currentProfile.value.id)
+      .eq('associated_account_email', currentUserEmail) // Security check
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    console.log('Personalisation saved to elderly_profiles successfully:', data);
+    
+    // Also update the user_questions in the public.users table for proper sync
+    try {
+      const { error: usersError } = await supabase
+        .from('users')
+        .update({ 
+          user_questions: personalisationForm.value.user_questions,
+          updated_at: new Date().toISOString()
+        })
+        .eq('email', currentUserEmail);
+      
+      if (usersError) {
+        console.warn('Could not update public.users user_questions:', usersError);
+      } else {
+        console.log('Public users table updated successfully');
+      }
+    } catch (usersError) {
+      console.warn('Error updating public.users table:', usersError);
+    }
+    
+    // Also update the user_questions in the auth.users table for real-time sync
+    try {
+      const { error: authError } = await supabase.auth.updateUser({
+        data: { user_questions: personalisationForm.value.user_questions }
+      });
+      
+      if (authError) {
+        console.warn('Could not update auth user_questions:', authError);
+      } else {
+        console.log('Auth user_questions updated successfully');
+      }
+    } catch (authError) {
+      console.warn('Error updating auth user_questions:', authError);
+    }
+    
+    // Success - close modal and refresh
+    closeModal();
+    await fetchElderlyProfiles();
+    
+  } catch (error: any) {
+    console.error('Error saving personalisation:', error);
+    // You could show a toast notification here
+  } finally {
+    isPersonalising.value = false;
+  }
+};
+
 const setupRealtimeSubscription = () => {
+  // Create a comprehensive real-time subscription channel
   realtimeChannel = supabase
-    .channel('elderly_profiles_changes')
+    .channel('comprehensive_sync_channel')
+    
+    // Listen to elderly_profiles table changes
     .on(
       'postgres_changes',
       {
@@ -294,12 +413,99 @@ const setupRealtimeSubscription = () => {
         table: 'elderly_profiles'
       },
       async (payload) => {
-        console.log('Realtime change detected:', payload);
-        // Refresh the data when changes occur
+        console.log('🔄 Elderly profiles change detected:', payload);
         await fetchElderlyProfiles();
       }
     )
-    .subscribe();
+    
+    // Listen to public.users table changes (for user_questions updates)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'users'
+      },
+      async (payload) => {
+        console.log('🔄 Users table change detected:', payload);
+        // Check if this change affects the current user
+        if (payload.new && typeof payload.new === 'object' && 'email' in payload.new && payload.new.email === user.value?.email) {
+          console.log('🔄 Current user data changed, refreshing profiles...');
+          await fetchElderlyProfiles();
+        }
+      }
+    )
+    
+    // Listen to auth.users changes (for user_metadata updates)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'auth',
+        table: 'users'
+      },
+      async (payload) => {
+        console.log('🔄 Auth users change detected:', payload);
+        // Check if this change affects the current user
+        if (payload.new && typeof payload.new === 'object' && 'email' in payload.new && payload.new.email === user.value?.email) {
+          console.log('🔄 Current user auth data changed, refreshing profiles...');
+          await fetchElderlyProfiles();
+        }
+      }
+    )
+    
+    // Listen to any other relevant table changes
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'subscriptions'
+      },
+      async (payload) => {
+        console.log('🔄 Subscriptions change detected:', payload);
+        // Could trigger billing updates or feature access changes
+      }
+    )
+    
+    // Listen to database function calls or other events
+    .on('broadcast', { event: 'database_sync' }, async (payload) => {
+      console.log('🔄 Database sync broadcast received:', payload);
+      await fetchElderlyProfiles();
+    })
+    
+    .subscribe((status) => {
+      console.log('🔄 Real-time subscription status:', status);
+      if (status === 'SUBSCRIBED') {
+        console.log('✅ Comprehensive real-time sync activated');
+      } else if (status === 'CHANNEL_ERROR') {
+        console.log('❌ Real-time sync error, attempting to reconnect...');
+        setTimeout(() => setupRealtimeSubscription(), 5000);
+      }
+    });
+};
+
+// Periodic sync to ensure data consistency
+const startPeriodicSync = () => {
+  // Sync every 30 seconds to catch any missed real-time events
+  periodicSyncInterval = setInterval(async () => {
+    try {
+      console.log('🔄 Periodic sync check...');
+      await fetchElderlyProfiles();
+    } catch (error) {
+      console.warn('Periodic sync failed:', error);
+    }
+  }, 30000); // 30 seconds
+  
+  console.log('✅ Periodic sync started (every 30 seconds)');
+};
+
+const stopPeriodicSync = () => {
+  if (periodicSyncInterval) {
+    clearInterval(periodicSyncInterval);
+    periodicSyncInterval = null;
+    console.log('🛑 Periodic sync stopped');
+  }
 };
 
 const fetchElderlyProfiles = async () => {
@@ -326,6 +532,23 @@ const fetchElderlyProfiles = async () => {
       .eq('associated_account_email', currentUserEmail)
       .order('created_at', { ascending: false });
 
+    // Also fetch user_questions from public.users table for the current user
+    let userQuestions = '';
+    try {
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('user_questions')
+        .eq('email', currentUserEmail)
+        .single();
+      
+      if (!userError && userData) {
+        userQuestions = userData.user_questions || '';
+        console.log('Fetched user_questions from public.users:', userQuestions);
+      }
+    } catch (userErr) {
+      console.warn('Could not fetch user_questions from public.users:', userErr);
+    }
+
     if (fetchError) {
       console.error('Supabase fetch error:', fetchError);
       throw fetchError;
@@ -347,7 +570,8 @@ const fetchElderlyProfiles = async () => {
       status: profile.status || 'active',
       created_at: profile.created_at,
       updated_at: profile.updated_at,
-      associated_account_email: profile.associated_account_email
+      associated_account_email: profile.associated_account_email,
+      user_questions: userQuestions // Use the fetched user_questions from public.users table
     }));
 
     console.log('Transformed profiles:', profiles.value);
@@ -396,6 +620,17 @@ const clearFilters = () => {
   registrationFilter.value = '';
   activityFilter.value = '';
   statusFilter.value = '';
+};
+
+// Manual sync function for users to force refresh
+const manualSync = async () => {
+  try {
+    console.log('🔄 Manual sync triggered by user');
+    await fetchElderlyProfiles();
+    console.log('✅ Manual sync completed');
+  } catch (error) {
+    console.error('Manual sync failed:', error);
+  }
 };
 
 
@@ -466,6 +701,18 @@ const filteredProfiles = computed(() => {
     <div class="p-8">
       <h1 class="text-2xl font-bold mb-6 text-[#061B2B]">Elderly Profiles</h1>
       
+      <!-- Sync Status Indicator -->
+      <div class="flex items-center gap-2 mb-4 text-sm">
+        <div class="flex items-center gap-2">
+          <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+          <span class="text-[#2871B5] font-medium">Real-time sync active</span>
+        </div>
+        <span class="text-[#061B2B]/60">•</span>
+        <span class="text-[#061B2B]/60">Auto-sync every 30s</span>
+        <span class="text-[#061B2B]/60">•</span>
+        <span class="text-[#061B2B]/60">Listening to: elderly_profiles, users, auth.users</span>
+      </div>
+      
       <!-- Compact Single Line Filters -->
       <div class="flex items-center gap-2 mb-6 w-full">
         <!-- Filters -->
@@ -502,6 +749,19 @@ const filteredProfiles = computed(() => {
         
         <!-- Search and Actions -->
         <input v-model="search" type="text" placeholder="Search profiles..." class="rounded-lg border border-[#061B2B]/20 px-3 py-1.5 text-xs w-48 focus:outline-none focus:ring-1 focus:ring-[#2871B5] focus:border-[#2871B5] h-8 text-[#061B2B]" />
+        
+        <!-- Sync Button -->
+        <button 
+          @click="manualSync" 
+          class="rounded-lg border border-[#061B2B]/20 px-2 py-1.5 flex items-center justify-center bg-white hover:bg-[#2871B5]/5 hover:border-[#2871B5]/40 h-8 w-8 transition-colors text-[#2871B5]"
+          title="Sync with Supabase"
+        >
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24">
+            <path d="M1 4v6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M23 20v-6h-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
         
         <button class="rounded-lg border border-[#061B2B]/20 px-2 py-1.5 flex items-center justify-center bg-white hover:bg-[#061B2B]/5 hover:border-[#061B2B]/40 h-8 w-8 transition-colors text-[#061B2B]">
           <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="2" rx="1" fill="currentColor"/><rect x="3" y="11" width="18" height="2" rx="1" fill="currentColor"/><rect x="3" y="17" width="18" height="2" rx="1" fill="currentColor"/></svg>
@@ -584,6 +844,13 @@ const filteredProfiles = computed(() => {
                   class="w-full text-left px-4 py-2 text-sm text-[#2871B5] hover:bg-[#2871B5]/10"
                 >
                   Edit Profile
+                </button>
+                
+                <button 
+                  @click.stop="openPersonalisationForm(profile)"
+                  class="w-full text-left px-4 py-2 text-sm text-[#2871B5] hover:bg-[#2871B5]/10"
+                >
+                  Profile Personalisation
                 </button>
                 
                 <hr class="my-1 border-[#061B2B]/20" />
@@ -800,6 +1067,53 @@ const filteredProfiles = computed(() => {
                   Saving...
                 </span>
                 <span v-else>Save Changes</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Profile Personalisation Modal -->
+    <div v-if="showPersonalisationModal" class="fixed inset-0 bg-[#061B2B]/50 overflow-y-auto h-full w-full z-50">
+      <div class="relative top-20 mx-auto p-5 border w-[500px] shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+          <h3 class="text-lg font-medium text-[#061B2B] mb-4">Profile Personalisation</h3>
+          <p class="text-sm text-gray-600 mb-4">Customize the story and personal details for {{ currentProfile?.name || 'this profile' }}</p>
+          
+          <form @submit.prevent="savePersonalisation" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Personal Story & Questions</label>
+              <textarea
+                v-model="personalisationForm.user_questions"
+                rows="6"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                placeholder="Share the person's story, background, preferences, or any specific questions you'd like to ask them..."
+              ></textarea>
+              <p class="text-xs text-gray-500 mt-1">This information helps personalize interactions and care for the elderly person.</p>
+            </div>
+            
+            <div class="flex justify-end space-x-3 pt-4">
+              <button
+                type="button"
+                @click="closeModal"
+                class="px-4 py-2 text-[#061B2B] bg-[#061B2B]/10 rounded-lg hover:bg-[#061B2B]/20 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                :disabled="isPersonalising"
+                class="px-4 py-2 bg-[#2871B5] text-white rounded-lg hover:bg-[#061B2B] disabled:opacity-50 transition-colors"
+              >
+                <span v-if="isPersonalising" class="flex items-center gap-2">
+                  <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Saving...
+                </span>
+                <span v-else>Save Personalisation</span>
               </button>
             </div>
           </form>
