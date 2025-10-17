@@ -49,4 +49,13 @@ return [
         'product_id' => env('STRIPE_PRODUCT_ID'),
     ],
 
+    'digitalocean' => [
+        'key' => env('DIGITALOCEAN_SPACES_KEY'),
+        'secret' => env('DIGITALOCEAN_SPACES_SECRET'),
+        'region' => env('DIGITALOCEAN_SPACES_REGION', 'nyc3'),
+        'endpoint' => env('DIGITALOCEAN_SPACES_ENDPOINT', 'https://nyc3.digitaloceanspaces.com'),
+        'bucket_name' => env('DIGITALOCEAN_SPACES_BUCKET', 'hazel-audio-clips'),
+        'base_path' => env('DIGITALOCEAN_SPACES_BASE_PATH', 'livekit/audio_transcripts'),
+    ],
+
 ];

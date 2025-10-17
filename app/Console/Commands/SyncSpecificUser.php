@@ -40,6 +40,13 @@ class SyncSpecificUser extends Command
         $this->line("  - Supabase ID: {$user->supabase_id}");
         $this->line("  - Role: $roleName");
         $this->line("  - User Questions: " . ($user->user_questions ?: 'None'));
+        $this->line("  - Min Endpointing Delay: {$user->min_endpointing_delay}s");
+        $this->line("  - Max Endpointing Delay: {$user->max_endpointing_delay}s");
+        $this->line("  - Min Speech Duration: {$user->min_speech_duration}s");
+        $this->line("  - Min Silence Duration: {$user->min_silence_duration}s");
+        $this->line("  - Prefix Padding Duration: {$user->prefix_padding_duration}s");
+        $this->line("  - Max Buffered Speech: {$user->max_buffered_speech}s");
+        $this->line("  - Activation Threshold: {$user->activation_threshold}");
 
         // Update Supabase user metadata
         $supabaseApiKey = config('services.supabase.service_role_key');
@@ -60,6 +67,13 @@ class SyncSpecificUser extends Command
                     'role' => $roleName,
                     'user_questions' => $user->user_questions,
                     'name' => $user->name,
+                    'min_endpointing_delay' => $user->min_endpointing_delay,
+                    'max_endpointing_delay' => $user->max_endpointing_delay,
+                    'min_speech_duration' => $user->min_speech_duration,
+                    'min_silence_duration' => $user->min_silence_duration,
+                    'prefix_padding_duration' => $user->prefix_padding_duration,
+                    'max_buffered_speech' => $user->max_buffered_speech,
+                    'activation_threshold' => $user->activation_threshold,
                 ],
             ]);
 

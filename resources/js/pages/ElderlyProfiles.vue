@@ -6,6 +6,7 @@ import { useSupabaseUser } from '@/composables/useSupabaseUser';
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import { router as inertiaRouter } from '@inertiajs/vue3';
 import { supabase } from '@/lib/supabaseClient';
+import StatsDashboard from '@/components/StatsDashboard.vue';
 
 // Type definitions
 interface ElderlyProfile {
@@ -23,6 +24,7 @@ interface ElderlyProfile {
   updated_at: string;
   associated_account_email?: string;
   user_questions?: string;
+  preferred_voice?: string;
 }
 
 useAuthGuard();
@@ -44,6 +46,7 @@ const openDropdown = ref<number | null>(null);
 const showAddModal = ref(false);
 const showEditModal = ref(false);
 const showPersonalisationModal = ref(false);
+const showStatsModal = ref(false);
 const currentProfile = ref<ElderlyProfile | null>(null);
 const isSaving = ref(false);
 const isPersonalising = ref(false);
@@ -60,6 +63,7 @@ const form = ref({
   phone: '',
   status: 'active',
   associated_account_email: '',
+  preferred_voice: 'sage',
 });
 
 // Personalisation form data
@@ -136,6 +140,7 @@ const openEditForm = (profile: ElderlyProfile) => {
     phone: profile.phone || '',
     status: profile.status || 'active',
     associated_account_email: profile.associated_account_email || '',
+    preferred_voice: profile.preferred_voice || 'sage',
   };
   showEditModal.value = true;
 };
@@ -148,10 +153,16 @@ const openPersonalisationForm = (profile: ElderlyProfile) => {
   showPersonalisationModal.value = true;
 };
 
+const openStatsModal = (profile: ElderlyProfile) => {
+  currentProfile.value = profile;
+  showStatsModal.value = true;
+};
+
 const closeModal = () => {
   showAddModal.value = false;
   showEditModal.value = false;
   showPersonalisationModal.value = false;
+  showStatsModal.value = false;
   currentProfile.value = null;
   resetForm();
 };
@@ -163,6 +174,7 @@ const resetForm = () => {
     phone: '',
     status: 'active',
     associated_account_email: '',
+    preferred_voice: 'sage',
   };
   formErrors.value = {};
 };
@@ -853,6 +865,13 @@ const filteredProfiles = computed(() => {
                   Profile Personalisation
                 </button>
                 
+                <button 
+                  @click.stop="openStatsModal(profile)"
+                  class="w-full text-left px-4 py-2 text-sm text-green-600 hover:bg-green-50"
+                >
+                  📊 View Stats
+                </button>
+                
                 <hr class="my-1 border-[#061B2B]/20" />
                 
                 <button 
@@ -959,6 +978,24 @@ const filteredProfiles = computed(() => {
               <span v-if="formErrors.status" class="text-red-500 text-xs">{{ formErrors.status }}</span>
             </div>
             
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Voice Options</label>
+              <select
+                v-model="form.preferred_voice"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                required
+              >
+                <option value="sage">Sage</option>
+                <option value="alloy">Alloy</option>
+                <option value="echo">Echo</option>
+                <option value="fable">Fable</option>
+                <option value="onyx">Onyx</option>
+                <option value="nova">Nova</option>
+                <option value="shimmer">Shimmer</option>
+              </select>
+              <span v-if="formErrors.preferred_voice" class="text-red-500 text-xs">{{ formErrors.preferred_voice }}</span>
+            </div>
+            
             <div v-if="formErrors.general" class="text-red-500 text-sm">{{ formErrors.general }}</div>
             
             <div class="flex justify-end space-x-3 pt-4">
@@ -1044,6 +1081,24 @@ const filteredProfiles = computed(() => {
               <span v-if="formErrors.status" class="text-red-500 text-xs">{{ formErrors.status }}</span>
             </div>
             
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Voice Options</label>
+              <select
+                v-model="form.preferred_voice"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                required
+              >
+                <option value="sage">Sage</option>
+                <option value="alloy">Alloy</option>
+                <option value="echo">Echo</option>
+                <option value="fable">Fable</option>
+                <option value="onyx">Onyx</option>
+                <option value="nova">Nova</option>
+                <option value="shimmer">Shimmer</option>
+              </select>
+              <span v-if="formErrors.preferred_voice" class="text-red-500 text-xs">{{ formErrors.preferred_voice }}</span>
+            </div>
+            
             <div v-if="formErrors.general" class="text-red-500 text-sm">{{ formErrors.general }}</div>
             
             <div class="flex justify-end space-x-3 pt-4">
@@ -1117,6 +1172,38 @@ const filteredProfiles = computed(() => {
               </button>
             </div>
           </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Modal -->
+    <div v-if="showStatsModal && currentProfile" class="fixed inset-0 bg-[#061B2B]/50 overflow-y-auto h-full w-full z-50">
+      <div class="relative top-4 mx-auto p-5 border w-full max-w-7xl shadow-lg rounded-md bg-white min-h-[90vh]">
+        <div class="mt-3">
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <h3 class="text-xl font-semibold text-[#061B2B]">
+                📊 Conversation Stats - {{ currentProfile.name }}
+              </h3>
+              <p class="text-[#061B2B]/60 text-sm mt-1">
+                Detailed analytics for {{ currentProfile.email }}
+              </p>
+            </div>
+            <button 
+              @click="closeModal"
+              class="text-[#061B2B]/60 hover:text-[#061B2B] p-2 rounded-full hover:bg-gray-100 transition-colors"
+            >
+              <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          
+          <StatsDashboard 
+            :profile-id="currentProfile.id" 
+            :account-id="currentProfile.id"
+            :is-elderly-profile="true"
+          />
         </div>
       </div>
     </div>

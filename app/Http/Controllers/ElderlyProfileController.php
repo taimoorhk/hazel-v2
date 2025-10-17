@@ -32,6 +32,7 @@ class ElderlyProfileController extends Controller
             'phone' => 'nullable|string|max:20',
             'status' => 'required|in:active,inactive,pending',
             'associated_account_email' => 'required|email|max:255',
+            'preferred_voice' => 'nullable|string|in:sage,alloy,echo,fable,onyx,nova,shimmer',
         ]);
 
         if ($validator->fails()) {
@@ -96,10 +97,11 @@ class ElderlyProfileController extends Controller
 
         $validator = Validator::make($request->all(), [
             'name' => 'nullable|string|max:255',
-            'email' => 'required|email|max:255|unique:elderly_profiles,email,' . $profile->id,
+            'email' => 'required|email|max:255|unique:elderly_profiles,email,' . $elderlyProfile->id,
             'phone' => 'nullable|string|max:20',
             'status' => 'required|in:active,inactive,pending',
             'associated_account_email' => 'required|email|max:255',
+            'preferred_voice' => 'nullable|string|in:sage,alloy,echo,fable,onyx,nova,shimmer',
         ]);
 
         if ($validator->fails()) {

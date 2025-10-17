@@ -82,6 +82,13 @@ class AuthController extends Controller
                     'user_metadata' => [
                         'role' => $latestRoleName,
                         'user_questions' => $user->user_questions,
+                        'min_endpointing_delay' => $user->min_endpointing_delay,
+                        'max_endpointing_delay' => $user->max_endpointing_delay,
+                        'min_speech_duration' => $user->min_speech_duration,
+                        'min_silence_duration' => $user->min_silence_duration,
+                        'prefix_padding_duration' => $user->prefix_padding_duration,
+                        'max_buffered_speech' => $user->max_buffered_speech,
+                        'activation_threshold' => $user->activation_threshold,
                     ],
                 ]);
 
@@ -151,6 +158,13 @@ class AuthController extends Controller
                         'role' => $roleName,
                         'user_questions' => $user->user_questions,
                         'name' => $user->name,
+                        'min_endpointing_delay' => $user->min_endpointing_delay,
+                        'max_endpointing_delay' => $user->max_endpointing_delay,
+                        'min_speech_duration' => $user->min_speech_duration,
+                        'min_silence_duration' => $user->min_silence_duration,
+                        'prefix_padding_duration' => $user->prefix_padding_duration,
+                        'max_buffered_speech' => $user->max_buffered_speech,
+                        'activation_threshold' => $user->activation_threshold,
                     ],
                 ]);
 
@@ -271,93 +285,21 @@ class AuthController extends Controller
                 return response()->json(['error' => 'Email is required'], 400);
             }
 
-            \Log::info('verifyUserExists called', ['email' => $email]);
+            \Log::info('verifyUserExists called (Supabase-direct mode)', ['email' => $email]);
 
-            // Check if user exists in Laravel database
-            $laravelUser = User::where('email', $email)->first();
+            // Bypass Laravel database entirely - allow all users to proceed with Supabase authentication
+            // This lets Supabase handle user existence and registration
+            \Log::info('Allowing user to proceed with Supabase authentication', ['email' => $email]);
             
-            if (!$laravelUser) {
-                \Log::info('User not found in Laravel database', ['email' => $email]);
-                return response()->json([
-                    'exists' => false,
-                    'message' => 'User not found. Please register first.'
-                ]);
-            }
-
-            // If user exists in Laravel but has no Supabase ID, allow them to proceed
-            // The Supabase user will be created during the magic link process
-            if (!$laravelUser->supabase_id) {
-                \Log::info('User exists in Laravel but has no Supabase ID - allowing authentication', ['email' => $email]);
-                return response()->json([
-                    'exists' => true,
-                    'message' => 'User verified successfully',
-                    'needs_supabase_sync' => true,
-                    'user' => [
-                        'id' => $laravelUser->id,
-                        'name' => $laravelUser->name,
-                        'email' => $laravelUser->email,
-                        'supabase_id' => null,
-                        'role' => $laravelUser->roles->first()?->name ?? 'Normal User'
-                    ]
-                ]);
-            }
-
-            // Verify user exists in Supabase Auth
-            $supabaseApiKey = config('services.supabase.service_role_key');
-            $supabaseUrl = config('services.supabase.url');
-            
-            if ($supabaseApiKey && $supabaseUrl) {
-                $response = Http::withHeaders([
-                    'apikey' => $supabaseApiKey,
-                    'Authorization' => 'Bearer ' . $supabaseApiKey,
-                    'Content-Type' => 'application/json',
-                ])->get("$supabaseUrl/auth/v1/admin/users/{$laravelUser->supabase_id}");
-
-                if ($response->successful()) {
-                    $supabaseUser = $response->json();
-                    \Log::info('User verified in both systems', ['email' => $email]);
-                    return response()->json([
-                        'exists' => true,
-                        'message' => 'User verified successfully',
-                        'user' => [
-                            'id' => $laravelUser->id,
-                            'name' => $laravelUser->name,
-                            'email' => $laravelUser->email,
-                            'supabase_id' => $laravelUser->supabase_id,
-                            'role' => $laravelUser->roles->first()?->name ?? 'Normal User'
-                        ]
-                    ]);
-                } else {
-                    \Log::warning('User not found in Supabase Auth', ['email' => $email, 'supabase_id' => $laravelUser->supabase_id]);
-                    return response()->json([
-                        'exists' => false,
-                        'message' => 'User account not found in authentication system. Please contact support.'
-                    ]);
-                }
-            } else {
-                // Fallback: If we have a Supabase ID, assume the user exists in Supabase
-                // This is a reasonable assumption since Supabase IDs are only assigned to valid users
-                if ($laravelUser->supabase_id) {
-                    \Log::info('User verified (fallback mode)', ['email' => $email]);
-                    return response()->json([
-                        'exists' => true,
-                        'message' => 'User verified successfully',
-                        'user' => [
-                            'id' => $laravelUser->id,
-                            'name' => $laravelUser->name,
-                            'email' => $laravelUser->email,
-                            'supabase_id' => $laravelUser->supabase_id,
-                            'role' => $laravelUser->roles->first()?->name ?? 'Normal User'
-                        ]
-                    ]);
-                } else {
-                    \Log::warning('Supabase configuration missing and no Supabase ID', ['email' => $email]);
-                    return response()->json([
-                        'exists' => false,
-                        'message' => 'User account not properly configured. Please contact support.'
-                    ]);
-                }
-            }
+            return response()->json([
+                'exists' => true,
+                'message' => 'Authentication allowed',
+                'needs_supabase_sync' => false,
+                'user' => [
+                    'email' => $email,
+                    'supabase_only' => true
+                ]
+            ]);
 
         } catch (\Exception $e) {
             \Log::error('verifyUserExists failed with exception', [
@@ -374,31 +316,19 @@ class AuthController extends Controller
         $supabaseId = $request->input('supabase_id');
         $email = $request->input('email');
         
-        \Log::info('checkUserQuestions called', ['email' => $email, 'supabase_id' => $supabaseId]);
+        \Log::info('checkUserQuestions called (Supabase-direct mode)', ['email' => $email, 'supabase_id' => $supabaseId]);
         
         if (!$supabaseId && !$email) {
             return response()->json(['error' => 'Supabase ID or email required'], 400);
         }
 
-        $user = null;
-        if ($supabaseId) {
-            $user = User::where('supabase_id', $supabaseId)->first();
-        }
-        
-        if (!$user && $email) {
-            $user = User::where('email', $email)->first();
-        }
-        
-        if (!$user) {
-            \Log::warning('User not found', ['email' => $email, 'supabase_id' => $supabaseId]);
-            return response()->json(['error' => 'User not found'], 404);
-        }
-
+        // For Supabase-direct mode, return default values since user questions are handled by Supabase
         $result = [
-            'has_questions' => !empty($user->user_questions),
-            'user_questions' => $user->user_questions,
-            'role' => $user->roles->first()?->name ?? 'Normal User',
-            'supabase_id' => $user->supabase_id // Include this for debugging
+            'has_questions' => false, // Let Supabase handle user onboarding
+            'user_questions' => null,
+            'role' => 'Normal User', // Default role
+            'supabase_id' => $supabaseId,
+            'supabase_only' => true
         ];
         
         \Log::info('checkUserQuestions result', $result);
@@ -790,6 +720,13 @@ class AuthController extends Controller
                 'password' => bcrypt(Str::random(32)),
                 'supabase_id' => $supabaseUser['id'],
                 'user_questions' => $supabaseUser['user_metadata']['user_questions'] ?? null,
+                'min_endpointing_delay' => $supabaseUser['user_metadata']['min_endpointing_delay'] ?? 0.5,
+                'max_endpointing_delay' => $supabaseUser['user_metadata']['max_endpointing_delay'] ?? 6.0,
+                'min_speech_duration' => $supabaseUser['user_metadata']['min_speech_duration'] ?? 0.05,
+                'min_silence_duration' => $supabaseUser['user_metadata']['min_silence_duration'] ?? 0.55,
+                'prefix_padding_duration' => $supabaseUser['user_metadata']['prefix_padding_duration'] ?? 0.5,
+                'max_buffered_speech' => $supabaseUser['user_metadata']['max_buffered_speech'] ?? 60,
+                'activation_threshold' => $supabaseUser['user_metadata']['activation_threshold'] ?? 0.5,
             ]);
 
             // Assign default role
@@ -823,6 +760,30 @@ class AuthController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
             return response()->json(['error' => 'Internal server error'], 500);
+        }
+    }
+
+    /**
+     * Test Supabase connection (for debugging)
+     */
+    public function testSupabaseConnection()
+    {
+        try {
+            $supabaseUrl = config('services.supabase.url');
+            $supabaseKey = config('services.supabase.anon_key');
+            
+            return response()->json([
+                'supabase_configured' => !empty($supabaseUrl) && !empty($supabaseKey),
+                'supabase_url' => $supabaseUrl ? 'Configured' : 'Missing',
+                'supabase_key' => $supabaseKey ? 'Configured' : 'Missing',
+                'message' => 'Supabase-direct authentication mode is active. Laravel database bypassed.',
+                'status' => 'success'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to check Supabase configuration',
+                'message' => $e->getMessage()
+            ], 500);
         }
     }
 } 

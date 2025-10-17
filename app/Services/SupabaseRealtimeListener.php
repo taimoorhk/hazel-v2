@@ -114,6 +114,13 @@ class SupabaseRealtimeListener
                 'name' => $record['name'] ?? $user->name,
                 'supabase_id' => $supabaseId,
                 'user_questions' => $record['user_questions'] ?? $user->user_questions,
+                'min_endpointing_delay' => $record['min_endpointing_delay'] ?? $user->min_endpointing_delay ?? 0.5,
+                'max_endpointing_delay' => $record['max_endpointing_delay'] ?? $user->max_endpointing_delay ?? 6.0,
+                'min_speech_duration' => $record['min_speech_duration'] ?? $user->min_speech_duration ?? 0.05,
+                'min_silence_duration' => $record['min_silence_duration'] ?? $user->min_silence_duration ?? 0.55,
+                'prefix_padding_duration' => $record['prefix_padding_duration'] ?? $user->prefix_padding_duration ?? 0.5,
+                'max_buffered_speech' => $record['max_buffered_speech'] ?? $user->max_buffered_speech ?? 60,
+                'activation_threshold' => $record['activation_threshold'] ?? $user->activation_threshold ?? 0.5,
             ]);
             Log::info('Updated existing user from Supabase real-time', ['email' => $email]);
         } else {
@@ -124,6 +131,13 @@ class SupabaseRealtimeListener
                 'password' => bcrypt(Str::random(32)),
                 'supabase_id' => $supabaseId,
                 'user_questions' => $record['user_questions'] ?? null,
+                'min_endpointing_delay' => $record['min_endpointing_delay'] ?? 0.5,
+                'max_endpointing_delay' => $record['max_endpointing_delay'] ?? 6.0,
+                'min_speech_duration' => $record['min_speech_duration'] ?? 0.05,
+                'min_silence_duration' => $record['min_silence_duration'] ?? 0.55,
+                'prefix_padding_duration' => $record['prefix_padding_duration'] ?? 0.5,
+                'max_buffered_speech' => $record['max_buffered_speech'] ?? 60,
+                'activation_threshold' => $record['activation_threshold'] ?? 0.5,
             ]);
 
             // Assign default role
@@ -162,6 +176,13 @@ class SupabaseRealtimeListener
             $user->update([
                 'name' => $record['name'] ?? $user->name,
                 'user_questions' => $record['user_questions'] ?? $user->user_questions,
+                'min_endpointing_delay' => $record['min_endpointing_delay'] ?? $user->min_endpointing_delay ?? 0.5,
+                'max_endpointing_delay' => $record['max_endpointing_delay'] ?? $user->max_endpointing_delay ?? 6.0,
+                'min_speech_duration' => $record['min_speech_duration'] ?? $user->min_speech_duration ?? 0.05,
+                'min_silence_duration' => $record['min_silence_duration'] ?? $user->min_silence_duration ?? 0.55,
+                'prefix_padding_duration' => $record['prefix_padding_duration'] ?? $user->prefix_padding_duration ?? 0.5,
+                'max_buffered_speech' => $record['max_buffered_speech'] ?? $user->max_buffered_speech ?? 60,
+                'activation_threshold' => $record['activation_threshold'] ?? $user->activation_threshold ?? 0.5,
             ]);
             Log::info('Updated user from Supabase real-time', ['email' => $user->email]);
         } else {

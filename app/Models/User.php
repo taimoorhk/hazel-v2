@@ -39,6 +39,14 @@ class User extends Authenticatable
         'user_address',
         'user_phone_number',
         'user_pronouns',
+        'min_endpointing_delay',
+        'max_endpointing_delay',
+        'min_speech_duration',
+        'min_silence_duration',
+        'prefix_padding_duration',
+        'max_buffered_speech',
+        'activation_threshold',
+        'preferred_voice',
     ];
 
     /**
@@ -61,6 +69,13 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'min_endpointing_delay' => 'decimal:1',
+            'max_endpointing_delay' => 'decimal:1',
+            'min_speech_duration' => 'decimal:2',
+            'min_silence_duration' => 'decimal:2',
+            'prefix_padding_duration' => 'decimal:2',
+            'max_buffered_speech' => 'integer',
+            'activation_threshold' => 'decimal:2',
         ];
     }
 

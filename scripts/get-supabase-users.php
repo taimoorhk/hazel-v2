@@ -44,6 +44,13 @@ if ($httpCode === 200) {
         echo "ID: " . ($user['id'] ?? 'N/A') . "\n";
         echo "Name: " . ($user['user_metadata']['name'] ?? $user['user_metadata']['display_name'] ?? 'N/A') . "\n";
         echo "Role: " . ($user['user_metadata']['role'] ?? 'N/A') . "\n";
+        echo "Min Endpointing Delay: " . ($user['user_metadata']['min_endpointing_delay'] ?? '0.5') . "s\n";
+        echo "Max Endpointing Delay: " . ($user['user_metadata']['max_endpointing_delay'] ?? '6.0') . "s\n";
+        echo "Min Speech Duration: " . ($user['user_metadata']['min_speech_duration'] ?? '0.05') . "s\n";
+        echo "Min Silence Duration: " . ($user['user_metadata']['min_silence_duration'] ?? '0.55') . "s\n";
+        echo "Prefix Padding Duration: " . ($user['user_metadata']['prefix_padding_duration'] ?? '0.5') . "s\n";
+        echo "Max Buffered Speech: " . ($user['user_metadata']['max_buffered_speech'] ?? '60') . "s\n";
+        echo "Activation Threshold: " . ($user['user_metadata']['activation_threshold'] ?? '0.5') . "\n";
         echo "Created: " . ($user['created_at'] ?? 'N/A') . "\n";
         echo "---\n";
     }

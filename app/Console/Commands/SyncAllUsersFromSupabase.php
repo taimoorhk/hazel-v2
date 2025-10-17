@@ -72,6 +72,13 @@ class SyncAllUsersFromSupabase extends Command
                                          $laravelUser->name,
                                 'supabase_id' => $supabaseId,
                                 'user_questions' => $supabaseUser['user_metadata']['user_questions'] ?? $laravelUser->user_questions,
+                                'min_endpointing_delay' => $supabaseUser['user_metadata']['min_endpointing_delay'] ?? $laravelUser->min_endpointing_delay ?? 0.5,
+                                'max_endpointing_delay' => $supabaseUser['user_metadata']['max_endpointing_delay'] ?? $laravelUser->max_endpointing_delay ?? 6.0,
+                                'min_speech_duration' => $supabaseUser['user_metadata']['min_speech_duration'] ?? $laravelUser->min_speech_duration ?? 0.05,
+                                'min_silence_duration' => $supabaseUser['user_metadata']['min_silence_duration'] ?? $laravelUser->min_silence_duration ?? 0.55,
+                                'prefix_padding_duration' => $supabaseUser['user_metadata']['prefix_padding_duration'] ?? $laravelUser->prefix_padding_duration ?? 0.5,
+                                'max_buffered_speech' => $supabaseUser['user_metadata']['max_buffered_speech'] ?? $laravelUser->max_buffered_speech ?? 60,
+                                'activation_threshold' => $supabaseUser['user_metadata']['activation_threshold'] ?? $laravelUser->activation_threshold ?? 0.5,
                             ]);
 
                             $this->line("Updated user: {$email}");
@@ -90,6 +97,13 @@ class SyncAllUsersFromSupabase extends Command
                             'password' => bcrypt(Str::random(32)),
                             'supabase_id' => $supabaseId,
                             'user_questions' => $supabaseUser['user_metadata']['user_questions'] ?? null,
+                            'min_endpointing_delay' => $supabaseUser['user_metadata']['min_endpointing_delay'] ?? 0.5,
+                            'max_endpointing_delay' => $supabaseUser['user_metadata']['max_endpointing_delay'] ?? 6.0,
+                            'min_speech_duration' => $supabaseUser['user_metadata']['min_speech_duration'] ?? 0.05,
+                            'min_silence_duration' => $supabaseUser['user_metadata']['min_silence_duration'] ?? 0.55,
+                            'prefix_padding_duration' => $supabaseUser['user_metadata']['prefix_padding_duration'] ?? 0.5,
+                            'max_buffered_speech' => $supabaseUser['user_metadata']['max_buffered_speech'] ?? 60,
+                            'activation_threshold' => $supabaseUser['user_metadata']['activation_threshold'] ?? 0.5,
                         ]);
 
                         // Assign default role

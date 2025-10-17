@@ -5,7 +5,7 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, Users, BarChart3, Shield } from 'lucide-vue-next';
+import { BookOpen, Folder, LayoutGrid, Users, BarChart3, Shield, Settings } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 import { useSupabaseUser } from '@/composables/useSupabaseUser';
 import { computed } from 'vue';
@@ -25,6 +25,11 @@ const mainNavItems: NavItem[] = [
         title: 'Elderly Profiles',
         href: '/elderly-profiles',
         icon: Users,
+    },
+    {
+        title: 'Custom Settings',
+        href: '/custom-settings',
+        icon: Settings,
     },
 ];
 

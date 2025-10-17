@@ -55,6 +55,13 @@ class UserSeeder extends Seeder
                         'password' => $password,
                         'supabase_id' => $sUser['id'],
                         'current_account_id' => $account->id,
+                        'min_endpointing_delay' => $sUser['user_metadata']['min_endpointing_delay'] ?? 0.5,
+                        'max_endpointing_delay' => $sUser['user_metadata']['max_endpointing_delay'] ?? 6.0,
+                        'min_speech_duration' => $sUser['user_metadata']['min_speech_duration'] ?? 0.05,
+                        'min_silence_duration' => $sUser['user_metadata']['min_silence_duration'] ?? 0.55,
+                        'prefix_padding_duration' => $sUser['user_metadata']['prefix_padding_duration'] ?? 0.5,
+                        'max_buffered_speech' => $sUser['user_metadata']['max_buffered_speech'] ?? 60,
+                        'activation_threshold' => $sUser['user_metadata']['activation_threshold'] ?? 0.5,
                     ]
                 );
                 $user->accounts()->syncWithoutDetaching([$account->id]);

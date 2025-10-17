@@ -59,6 +59,12 @@ Route::get('/help', function () {
     return Inertia::render('Help');
 })->name('help');
 
+Route::get('/custom-settings', function () {
+    return Inertia::render('CustomSettings');
+})->name('custom-settings');
+
+Route::patch('/custom-settings', [App\Http\Controllers\CustomSettingsController::class, 'update'])->name('custom-settings.update');
+
 Route::get('/reports', function () {
     // Check if user is authenticated and has the right role
     if (auth()->check()) {

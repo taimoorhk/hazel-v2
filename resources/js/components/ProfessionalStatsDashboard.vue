@@ -1,0 +1,1230 @@
+<template>
+  <div class="professional-stats-dashboard">
+    <!-- Loading State -->
+    <div v-if="loading" class="loading-container">
+      <div class="loading-spinner"></div>
+      <p class="loading-text">Loading comprehensive health analytics...</p>
+    </div>
+
+    <!-- Error State -->
+    <div v-else-if="error" class="error-container">
+      <div class="error-icon">⚠️</div>
+      <h3 class="error-title">Unable to Load Data</h3>
+      <p class="error-message">{{ error }}</p>
+    </div>
+
+    <!-- Main Dashboard Content -->
+    <div v-else-if="statsData" class="dashboard-container">
+      <!-- Header Section -->
+      <div class="dashboard-header">
+        <h2 class="dashboard-title">Health Analytics Dashboard</h2>
+        <p class="dashboard-subtitle">
+          {{ isElderlyProfile ? 'Comprehensive health insights for elderly profile' : 'Your personal health monitoring and analytics' }}
+        </p>
+      </div>
+
+      <!-- Key Metrics Overview -->
+      <section class="metrics-section">
+        <h3 class="section-title">Key Health Metrics</h3>
+        <div class="metrics-grid">
+          <div class="metric-card primary">
+            <div class="metric-icon-wrapper">
+              <div class="metric-icon">💚</div>
+            </div>
+            <div class="metric-content">
+              <div class="metric-label">Overall Health</div>
+              <div class="metric-value">{{ Math.round(overallHealthScore * 10) }}%</div>
+              <div class="metric-status excellent">Excellent</div>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon-wrapper">
+              <div class="metric-icon">🧠</div>
+            </div>
+            <div class="metric-content">
+              <div class="metric-label">Cognitive Health</div>
+              <div class="metric-value">{{ Math.round(cognitiveHealthScore * 10) }}%</div>
+              <div class="metric-status" :class="getStatusClass(cognitiveHealthScore)">{{ getStatusText(cognitiveHealthScore) }}</div>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon-wrapper">
+              <div class="metric-icon">🧘</div>
+            </div>
+            <div class="metric-content">
+              <div class="metric-label">Mental Health</div>
+              <div class="metric-value">{{ Math.round(mentalHealthScore * 10) }}%</div>
+              <div class="metric-status" :class="getStatusClass(mentalHealthScore)">{{ getStatusText(mentalHealthScore) }}</div>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon-wrapper">
+              <div class="metric-icon">💪</div>
+            </div>
+            <div class="metric-content">
+              <div class="metric-label">Physical Health</div>
+              <div class="metric-value">{{ Math.round(physicalHealthScore * 10) }}%</div>
+              <div class="metric-status" :class="getStatusClass(physicalHealthScore)">{{ getStatusText(physicalHealthScore) }}</div>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon-wrapper">
+              <div class="metric-icon">👥</div>
+            </div>
+            <div class="metric-content">
+              <div class="metric-label">Social Health</div>
+              <div class="metric-value">{{ Math.round(socialHealthScore * 10) }}%</div>
+              <div class="metric-status" :class="getStatusClass(socialHealthScore)">{{ getStatusText(socialHealthScore) }}</div>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon-wrapper">
+              <div class="metric-icon">📞</div>
+            </div>
+            <div class="metric-content">
+              <div class="metric-label">Total Calls</div>
+              <div class="metric-value">{{ totalCalls }}</div>
+              <div class="metric-status active">Active</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Risk Assessment Section -->
+      <section class="risk-section">
+        <h3 class="section-title">Health Risk Assessment</h3>
+        <div class="risk-grid">
+          <div class="risk-card" :class="getRiskLevelClass(alzheimerRiskScore)">
+            <div class="risk-header">
+              <div class="risk-icon">🧠</div>
+              <div class="risk-info">
+                <h4 class="risk-title">Alzheimer's Risk</h4>
+                <div class="risk-score" :class="getRiskLevelClass(alzheimerRiskScore)">
+                  {{ alzheimerRiskScore.toFixed(1) }}/10
+                </div>
+              </div>
+            </div>
+            <p class="risk-description">{{ getRiskDescription('alzheimer', alzheimerRiskScore) }}</p>
+            <div class="risk-progress">
+              <div class="risk-progress-bar" :class="getRiskLevelClass(alzheimerRiskScore)" 
+                   :style="{ width: `${(alzheimerRiskScore / 10) * 100}%` }"></div>
+            </div>
+          </div>
+
+          <div class="risk-card" :class="getRiskLevelClass(parkinsonRiskScore)">
+            <div class="risk-header">
+              <div class="risk-icon">🤲</div>
+              <div class="risk-info">
+                <h4 class="risk-title">Parkinson's Risk</h4>
+                <div class="risk-score" :class="getRiskLevelClass(parkinsonRiskScore)">
+                  {{ parkinsonRiskScore.toFixed(1) }}/10
+                </div>
+              </div>
+            </div>
+            <p class="risk-description">{{ getRiskDescription('parkinson', parkinsonRiskScore) }}</p>
+            <div class="risk-progress">
+              <div class="risk-progress-bar" :class="getRiskLevelClass(parkinsonRiskScore)" 
+                   :style="{ width: `${(parkinsonRiskScore / 10) * 100}%` }"></div>
+            </div>
+          </div>
+
+          <div class="risk-card" :class="getRiskLevelClass(depressionRiskScore)">
+            <div class="risk-header">
+              <div class="risk-icon">😔</div>
+              <div class="risk-info">
+                <h4 class="risk-title">Depression Risk</h4>
+                <div class="risk-score" :class="getRiskLevelClass(depressionRiskScore)">
+                  {{ depressionRiskScore.toFixed(1) }}/10
+                </div>
+              </div>
+            </div>
+            <p class="risk-description">{{ getRiskDescription('depression', depressionRiskScore) }}</p>
+            <div class="risk-progress">
+              <div class="risk-progress-bar" :class="getRiskLevelClass(depressionRiskScore)" 
+                   :style="{ width: `${(depressionRiskScore / 10) * 100}%` }"></div>
+            </div>
+          </div>
+
+          <div class="risk-card" :class="getRiskLevelClass(anxietyRiskScore)">
+            <div class="risk-header">
+              <div class="risk-icon">😰</div>
+              <div class="risk-info">
+                <h4 class="risk-title">Anxiety Risk</h4>
+                <div class="risk-score" :class="getRiskLevelClass(anxietyRiskScore)">
+                  {{ anxietyRiskScore.toFixed(1) }}/10
+                </div>
+              </div>
+            </div>
+            <p class="risk-description">{{ getRiskDescription('anxiety', anxietyRiskScore) }}</p>
+            <div class="risk-progress">
+              <div class="risk-progress-bar" :class="getRiskLevelClass(anxietyRiskScore)" 
+                   :style="{ width: `${(anxietyRiskScore / 10) * 100}%` }"></div>
+            </div>
+          </div>
+
+          <div class="risk-card" :class="getRiskLevelClass(fallRiskScore)">
+            <div class="risk-header">
+              <div class="risk-icon">⚠️</div>
+              <div class="risk-info">
+                <h4 class="risk-title">Fall Risk</h4>
+                <div class="risk-score" :class="getRiskLevelClass(fallRiskScore)">
+                  {{ fallRiskScore.toFixed(1) }}/10
+                </div>
+              </div>
+            </div>
+            <p class="risk-description">{{ getRiskDescription('fall', fallRiskScore) }}</p>
+            <div class="risk-progress">
+              <div class="risk-progress-bar" :class="getRiskLevelClass(fallRiskScore)" 
+                   :style="{ width: `${(fallRiskScore / 10) * 100}%` }"></div>
+            </div>
+          </div>
+
+          <div class="risk-card" :class="getRiskLevelClass(cognitiveRiskScore)">
+            <div class="risk-header">
+              <div class="risk-icon">🧮</div>
+              <div class="risk-info">
+                <h4 class="risk-title">Cognitive Risk</h4>
+                <div class="risk-score" :class="getRiskLevelClass(cognitiveRiskScore)">
+                  {{ cognitiveRiskScore.toFixed(1) }}/10
+                </div>
+              </div>
+            </div>
+            <p class="risk-description">{{ getRiskDescription('cognitive', cognitiveRiskScore) }}</p>
+            <div class="risk-progress">
+              <div class="risk-progress-bar" :class="getRiskLevelClass(cognitiveRiskScore)" 
+                   :style="{ width: `${(cognitiveRiskScore / 10) * 100}%` }"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Health Analytics Charts Section -->
+      <section class="charts-section">
+        <h3 class="section-title">Health Analytics</h3>
+        <div class="charts-grid">
+          <div class="chart-card">
+            <div class="chart-header">
+              <h4 class="chart-title">Mood Distribution</h4>
+              <div class="chart-icon">😊</div>
+            </div>
+            <div class="chart-container">
+              <StatsChart
+                :data="moodChartData"
+                type="doughnut"
+                :options="chartOptions"
+              />
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-header">
+              <h4 class="chart-title">Engagement Levels</h4>
+              <div class="chart-icon">📈</div>
+            </div>
+            <div class="chart-container">
+              <StatsChart
+                :data="engagementChartData"
+                type="bar"
+                :options="chartOptions"
+              />
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-header">
+              <h4 class="chart-title">Energy Levels</h4>
+              <div class="chart-icon">⚡</div>
+            </div>
+            <div class="chart-container">
+              <StatsChart
+                :data="energyLevelChartData"
+                type="pie"
+                :options="chartOptions"
+              />
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-header">
+              <h4 class="chart-title">Cognitive Function</h4>
+              <div class="chart-icon">🧠</div>
+            </div>
+            <div class="chart-container">
+              <StatsChart
+                :data="cognitiveFunctionChartData"
+                type="doughnut"
+                :options="chartOptions"
+              />
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-header">
+              <h4 class="chart-title">Memory Recall</h4>
+              <div class="chart-icon">🧮</div>
+            </div>
+            <div class="chart-container">
+              <StatsChart
+                :data="memoryRecallChartData"
+                type="bar"
+                :options="chartOptions"
+              />
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-header">
+              <h4 class="chart-title">Sleep Quality</h4>
+              <div class="chart-icon">😴</div>
+            </div>
+            <div class="chart-container">
+              <StatsChart
+                :data="sleepQualityChartData"
+                type="pie"
+                :options="chartOptions"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Detailed Statistics Section -->
+      <section class="statistics-section">
+        <div class="stats-grid">
+          <!-- Call Statistics -->
+          <div class="stats-card">
+            <div class="stats-header">
+              <h4 class="stats-title">Call Statistics</h4>
+              <div class="stats-icon">📞</div>
+            </div>
+            <div class="stats-content">
+              <div class="stat-row">
+                <span class="stat-label">Total Calls</span>
+                <span class="stat-value">{{ totalCalls }}</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Total Duration</span>
+                <span class="stat-value">{{ formatDuration(totalDuration) }}</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Average Duration</span>
+                <span class="stat-value">{{ formatDuration(averageDuration) }}</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Last Call</span>
+                <span class="stat-value">{{ formatLastCall() }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Health Conditions -->
+          <div class="stats-card">
+            <div class="stats-header">
+              <h4 class="stats-title">Health Conditions</h4>
+              <div class="stats-icon">🏥</div>
+            </div>
+            <div class="stats-content">
+              <div class="stat-row">
+                <span class="stat-label">Diagnosed</span>
+                <span class="stat-value">{{ healthConditions.diagnosed_count }}</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Suspected</span>
+                <span class="stat-value">{{ healthConditions.suspected_count }}</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Risk Factors</span>
+                <span class="stat-value">{{ healthConditions.risk_factors_count }}</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Monitored</span>
+                <span class="stat-value">{{ healthConditions.monitored_count }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sentiment Analysis -->
+          <div class="stats-card">
+            <div class="stats-header">
+              <h4 class="stats-title">Sentiment Analysis</h4>
+              <div class="stats-icon">😊</div>
+            </div>
+            <div class="stats-content">
+              <div class="stat-row">
+                <span class="stat-label">Average Sentiment</span>
+                <span class="stat-value sentiment-positive">{{ averageSentiment }}</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Positive</span>
+                <span class="stat-value">{{ sentimentDistribution.positive || 0 }}</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Neutral</span>
+                <span class="stat-value">{{ sentimentDistribution.neutral || 0 }}</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Negative</span>
+                <span class="stat-value">{{ sentimentDistribution.negative || 0 }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Conversation Quality -->
+          <div class="stats-card">
+            <div class="stats-header">
+              <h4 class="stats-title">Conversation Quality</h4>
+              <div class="stats-icon">💬</div>
+            </div>
+            <div class="stats-content">
+              <div class="stat-row">
+                <span class="stat-label">Quality</span>
+                <span class="stat-value quality-high">{{ conversationQuality }}</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Confidence</span>
+                <span class="stat-value">{{ (averageConfidenceScore * 100).toFixed(1) }}%</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Data Completeness</span>
+                <span class="stat-value completeness-excellent">{{ dataCompleteness }}</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Engagement Trend</span>
+                <span class="stat-value trend-increasing">{{ engagementTrend }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <div class="dashboard-footer">
+        <p class="last-updated">
+          Last updated: {{ new Date().toLocaleString() }} | Auto-refresh every 30 seconds
+        </p>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted, computed } from 'vue'
+import StatsChart from '@/components/StatsChart.vue'
+
+const props = defineProps<{
+  profileId: number
+  accountId: number
+  isElderlyProfile: boolean
+}>()
+
+// Reactive data
+const loading = ref(true)
+const error = ref<string | null>(null)
+const statsData = ref<any>(null)
+
+// Chart options
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: 'bottom' as const,
+      labels: {
+        padding: 15,
+        font: {
+          size: 11
+        }
+      }
+    }
+  }
+}
+
+// Computed properties
+const overallHealthScore = computed(() => statsData.value?.aggregated_health_summary?.overall_health_score || 0)
+const cognitiveHealthScore = computed(() => statsData.value?.aggregated_health_summary?.cognitive_health_score || 0)
+const mentalHealthScore = computed(() => statsData.value?.aggregated_health_summary?.mental_health_score || 0)
+const physicalHealthScore = computed(() => statsData.value?.aggregated_health_summary?.physical_health_score || 0)
+const socialHealthScore = computed(() => statsData.value?.aggregated_health_summary?.social_health_score || 0)
+
+const alzheimerRiskScore = computed(() => statsData.value?.aggregated_health_summary?.alzheimer_risk_score || 0)
+const parkinsonRiskScore = computed(() => statsData.value?.aggregated_health_summary?.parkinson_risk_score || 0)
+const depressionRiskScore = computed(() => statsData.value?.aggregated_health_summary?.depression_risk_score || 0)
+const anxietyRiskScore = computed(() => statsData.value?.aggregated_health_summary?.anxiety_risk_score || 0)
+const fallRiskScore = computed(() => statsData.value?.aggregated_health_summary?.fall_risk_score || 0)
+const cognitiveRiskScore = computed(() => statsData.value?.aggregated_health_summary?.cognitive_risk_score || 0)
+
+const totalCalls = computed(() => statsData.value?.aggregated_health_summary?.total_calls || 0)
+const totalDuration = computed(() => statsData.value?.aggregated_health_summary?.total_duration || 0)
+const averageDuration = computed(() => totalCalls.value > 0 ? totalDuration.value / totalCalls.value : 0)
+
+const healthConditions = computed(() => ({
+  diagnosed_count: statsData.value?.aggregated_health_summary?.diagnosed_conditions_count || 0,
+  suspected_count: statsData.value?.aggregated_health_summary?.suspected_conditions_count || 0,
+  risk_factors_count: statsData.value?.aggregated_health_summary?.risk_factors_count || 0,
+  monitored_count: statsData.value?.aggregated_health_summary?.monitored_conditions_count || 0
+}))
+
+const averageSentiment = computed(() => statsData.value?.aggregated_health_summary?.average_sentiment || 'neutral')
+const sentimentDistribution = computed(() => statsData.value?.aggregated_health_summary?.sentiment_distribution || {})
+const conversationQuality = computed(() => statsData.value?.aggregated_health_summary?.conversation_quality || 'unknown')
+const averageConfidenceScore = computed(() => statsData.value?.aggregated_health_summary?.average_confidence_score || 0)
+const dataCompleteness = computed(() => statsData.value?.aggregated_health_summary?.data_completeness || 'unknown')
+const engagementTrend = computed(() => statsData.value?.aggregated_health_summary?.engagement_trend || 'stable')
+
+// Chart data computed properties
+const moodChartData = computed(() => {
+  if (!statsData.value?.canary_analysis_files) return { labels: [], datasets: [] }
+  
+  const moods = statsData.value.canary_analysis_files.map((file: any) => file.canary_data.analysis.mood)
+  const moodCounts = moods.reduce((acc: any, mood: string) => {
+    acc[mood] = (acc[mood] || 0) + 1
+    return acc
+  }, {})
+  
+  return {
+    labels: Object.keys(moodCounts),
+    datasets: [{
+      data: Object.values(moodCounts),
+      backgroundColor: ['#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4']
+    }]
+  }
+})
+
+const engagementChartData = computed(() => {
+  if (!statsData.value?.canary_analysis_files) return { labels: [], datasets: [] }
+  
+  const engagements = statsData.value.canary_analysis_files.map((file: any) => file.canary_data.analysis.engagement)
+  const engagementCounts = engagements.reduce((acc: any, engagement: string) => {
+    acc[engagement] = (acc[engagement] || 0) + 1
+    return acc
+  }, {})
+  
+  return {
+    labels: Object.keys(engagementCounts),
+    datasets: [{
+      data: Object.values(engagementCounts),
+      backgroundColor: ['#10B981', '#F59E0B', '#EF4444']
+    }]
+  }
+})
+
+const energyLevelChartData = computed(() => {
+  if (!statsData.value?.canary_analysis_files) return { labels: [], datasets: [] }
+  
+  const energyLevels = statsData.value.canary_analysis_files.map((file: any) => file.canary_data.analysis.energy_level)
+  const energyCounts = energyLevels.reduce((acc: any, level: string) => {
+    acc[level] = (acc[level] || 0) + 1
+    return acc
+  }, {})
+  
+  return {
+    labels: Object.keys(energyCounts),
+    datasets: [{
+      data: Object.values(energyCounts),
+      backgroundColor: ['#10B981', '#F59E0B', '#EF4444', '#8B5CF6']
+    }]
+  }
+})
+
+const cognitiveFunctionChartData = computed(() => {
+  if (!statsData.value?.canary_analysis_files) return { labels: [], datasets: [] }
+  
+  const functions = statsData.value.canary_analysis_files.map((file: any) => file.canary_data.analysis.cognitive_function)
+  const functionCounts = functions.reduce((acc: any, func: string) => {
+    acc[func] = (acc[func] || 0) + 1
+    return acc
+  }, {})
+  
+  return {
+    labels: Object.keys(functionCounts),
+    datasets: [{
+      data: Object.values(functionCounts),
+      backgroundColor: ['#10B981', '#F59E0B', '#EF4444']
+    }]
+  }
+})
+
+const memoryRecallChartData = computed(() => {
+  if (!statsData.value?.canary_analysis_files) return { labels: [], datasets: [] }
+  
+  const memories = statsData.value.canary_analysis_files.map((file: any) => file.canary_data.analysis.memory_recall)
+  const memoryCounts = memories.reduce((acc: any, memory: string) => {
+    acc[memory] = (acc[memory] || 0) + 1
+    return acc
+  }, {})
+  
+  return {
+    labels: Object.keys(memoryCounts),
+    datasets: [{
+      data: Object.values(memoryCounts),
+      backgroundColor: ['#10B981', '#F59E0B', '#EF4444', '#8B5CF6']
+    }]
+  }
+})
+
+const sleepQualityChartData = computed(() => {
+  if (!statsData.value?.canary_analysis_files) return { labels: [], datasets: [] }
+  
+  const sleeps = statsData.value.canary_analysis_files.map((file: any) => file.canary_data.analysis.sleep_quality)
+  const sleepCounts = sleeps.reduce((acc: any, sleep: string) => {
+    acc[sleep] = (acc[sleep] || 0) + 1
+    return acc
+  }, {})
+  
+  return {
+    labels: Object.keys(sleepCounts),
+    datasets: [{
+      data: Object.values(sleepCounts),
+      backgroundColor: ['#10B981', '#F59E0B', '#EF4444', '#8B5CF6']
+    }]
+  }
+})
+
+// Helper functions
+const formatDuration = (seconds: number) => {
+  const minutes = Math.floor(seconds / 60)
+  const remainingSeconds = seconds % 60
+  return `${minutes}m ${remainingSeconds}s`
+}
+
+const formatLastCall = () => {
+  const lastCall = statsData.value?.aggregated_health_summary?.last_call
+  if (!lastCall) return 'No calls'
+  return new Date(lastCall).toLocaleDateString()
+}
+
+const getStatusClass = (score: number) => {
+  if (score >= 8) return 'excellent'
+  if (score >= 6) return 'good'
+  if (score >= 4) return 'fair'
+  return 'poor'
+}
+
+const getStatusText = (score: number) => {
+  if (score >= 8) return 'Excellent'
+  if (score >= 6) return 'Good'
+  if (score >= 4) return 'Fair'
+  return 'Poor'
+}
+
+const getRiskLevelClass = (score: number) => {
+  if (score <= 3) return 'low'
+  if (score <= 6) return 'moderate'
+  return 'high'
+}
+
+const getRiskDescription = (type: string, score: number) => {
+  const level = getRiskLevelClass(score)
+  const descriptions = {
+    alzheimer: {
+      low: 'Low risk - Good cognitive health',
+      moderate: 'Moderate risk - Monitor cognitive function',
+      high: 'High risk - Consider cognitive assessment'
+    },
+    parkinson: {
+      low: 'Low risk - No motor symptoms',
+      moderate: 'Moderate risk - Monitor motor function',
+      high: 'High risk - Consider neurological evaluation'
+    },
+    depression: {
+      low: 'Low risk - Good mood indicators',
+      moderate: 'Moderate risk - Monitor mood changes',
+      high: 'High risk - Consider mental health support'
+    },
+    anxiety: {
+      low: 'Low risk - Low anxiety levels',
+      moderate: 'Moderate risk - Monitor stress levels',
+      high: 'High risk - Consider anxiety management'
+    },
+    fall: {
+      low: 'Low risk - Good balance and mobility',
+      moderate: 'Moderate risk - Monitor balance',
+      high: 'High risk - Implement fall prevention'
+    },
+    cognitive: {
+      low: 'Low risk - Strong cognitive function',
+      moderate: 'Moderate risk - Monitor cognitive changes',
+      high: 'High risk - Consider cognitive assessment'
+    }
+  }
+  return descriptions[type as keyof typeof descriptions]?.[level as keyof typeof descriptions.alzheimer] || 'Risk assessment unavailable'
+}
+
+// Transform enhanced canary data to match component structure
+const transformEnhancedCanaryData = (canaryData: any) => {
+  return {
+    aggregated_health_summary: canaryData.aggregated_health_summary,
+    canary_analysis_files: canaryData.canary_analysis_files
+  }
+}
+
+// Load enhanced stats data
+const loadStats = async () => {
+  loading.value = true
+  error.value = null
+  
+  try {
+    // Fetch enhanced canary analysis data
+    const endpoint = props.isElderlyProfile 
+      ? `/api/enhanced-canary/profile-15`
+      : `/api/enhanced-canary/account-6`
+    
+    const response = await fetch(endpoint)
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    const result = await response.json()
+    
+    if (result.success && result.data) {
+      // Transform the enhanced canary data
+      statsData.value = transformEnhancedCanaryData(result.data)
+      console.log('📊 Loaded professional stats data:', result.data)
+    } else {
+      throw new Error(result.message || 'Failed to load enhanced canary data')
+    }
+  } catch (err) {
+    console.error('Error loading professional stats:', err)
+    error.value = err instanceof Error ? err.message : 'Failed to load stats'
+    
+    // Fallback to basic data structure
+    statsData.value = {
+      aggregated_health_summary: {
+        total_calls: 0,
+        total_duration: 0,
+        overall_health_score: 0,
+        cognitive_health_score: 0,
+        mental_health_score: 0,
+        physical_health_score: 0,
+        social_health_score: 0,
+        alzheimer_risk_score: 0,
+        parkinson_risk_score: 0,
+        depression_risk_score: 0,
+        anxiety_risk_score: 0,
+        fall_risk_score: 0,
+        cognitive_risk_score: 0,
+        diagnosed_conditions_count: 0,
+        suspected_conditions_count: 0,
+        risk_factors_count: 0,
+        monitored_conditions_count: 0,
+        average_sentiment: 'neutral',
+        sentiment_distribution: {},
+        conversation_quality: 'unknown',
+        average_confidence_score: 0,
+        data_completeness: 'unknown',
+        engagement_trend: 'stable'
+      },
+      canary_analysis_files: []
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+// Auto-refresh every 30 seconds
+const refreshInterval = ref<number | null>(null)
+
+onMounted(async () => {
+  await loadStats()
+  
+  // Set up auto-refresh
+  refreshInterval.value = window.setInterval(() => {
+    loadStats()
+  }, 30000)
+})
+
+// Cleanup on unmount
+import { onUnmounted } from 'vue'
+onUnmounted(() => {
+  if (refreshInterval.value) {
+    clearInterval(refreshInterval.value)
+  }
+})
+</script>
+
+<style scoped>
+.professional-stats-dashboard {
+  padding: 24px;
+  background: #f8fafc;
+  min-height: 100vh;
+}
+
+/* Loading and Error States */
+.loading-container, .error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e5e7eb;
+  border-top: 3px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+  color: #6b7280;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.error-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.error-title {
+  color: #dc2626;
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.error-message {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+/* Dashboard Container */
+.dashboard-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Header */
+.dashboard-header {
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.dashboard-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 8px;
+}
+
+.dashboard-subtitle {
+  font-size: 16px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* Section Titles */
+.section-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 20px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+/* Metrics Section */
+.metrics-section {
+  margin-bottom: 40px;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.metric-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all 0.2s ease;
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.metric-card.primary {
+  border-left: 4px solid #3b82f6;
+}
+
+.metric-icon-wrapper {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.metric-icon {
+  font-size: 24px;
+}
+
+.metric-content {
+  flex: 1;
+}
+
+.metric-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.metric-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 4px;
+  line-height: 1;
+}
+
+.metric-status {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 12px;
+  display: inline-block;
+}
+
+.metric-status.excellent {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.metric-status.good {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.metric-status.fair {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.metric-status.poor {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.metric-status.active {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* Risk Assessment Section */
+.risk-section {
+  margin-bottom: 40px;
+}
+
+.risk-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.risk-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.risk-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.risk-card.low {
+  border-left: 4px solid #10b981;
+}
+
+.risk-card.moderate {
+  border-left: 4px solid #f59e0b;
+}
+
+.risk-card.high {
+  border-left: 4px solid #ef4444;
+}
+
+.risk-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.risk-icon {
+  font-size: 20px;
+}
+
+.risk-info {
+  flex: 1;
+}
+
+.risk-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 4px;
+}
+
+.risk-score {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.risk-card.low .risk-score {
+  color: #10b981;
+}
+
+.risk-card.moderate .risk-score {
+  color: #f59e0b;
+}
+
+.risk-card.high .risk-score {
+  color: #ef4444;
+}
+
+.risk-description {
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.4;
+  margin-bottom: 12px;
+}
+
+.risk-progress {
+  width: 100%;
+  height: 4px;
+  background: #e5e7eb;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.risk-progress-bar {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.risk-progress-bar.low {
+  background: #10b981;
+}
+
+.risk-progress-bar.moderate {
+  background: #f59e0b;
+}
+
+.risk-progress-bar.high {
+  background: #ef4444;
+}
+
+/* Charts Section */
+.charts-section {
+  margin-bottom: 40px;
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.chart-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.chart-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.chart-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.chart-icon {
+  font-size: 16px;
+}
+
+.chart-container {
+  height: 200px;
+  position: relative;
+}
+
+/* Statistics Section */
+.statistics-section {
+  margin-bottom: 40px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.stats-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.stats-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.stats-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.stats-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.stats-icon {
+  font-size: 16px;
+}
+
+.stats-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.stat-row:last-child {
+  border-bottom: none;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.stat-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.stat-value.sentiment-positive {
+  color: #10b981;
+}
+
+.stat-value.quality-high {
+  color: #10b981;
+}
+
+.stat-value.completeness-excellent {
+  color: #10b981;
+}
+
+.stat-value.trend-increasing {
+  color: #10b981;
+}
+
+/* Footer */
+.dashboard-footer {
+  text-align: center;
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+}
+
+.last-updated {
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .professional-stats-dashboard {
+    padding: 16px;
+  }
+  
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .risk-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .dashboard-title {
+    font-size: 24px;
+  }
+  
+  .metric-card {
+    padding: 20px;
+  }
+}
+</style>

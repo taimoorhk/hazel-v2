@@ -21,6 +21,7 @@ class ElderlyProfile extends Model
         'temporary_role',
         'status',
         'associated_account_email',
+        'preferred_voice',
     ];
 
     /**

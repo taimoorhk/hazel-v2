@@ -70,6 +70,13 @@ class SyncSupabaseUsers extends Command
                         $existingUser->update([
                             'supabase_id' => $supabaseId,
                             'name' => $userMetadata['name'] ?? $userMetadata['display_name'] ?? $existingUser->name,
+                            'min_endpointing_delay' => $userMetadata['min_endpointing_delay'] ?? $existingUser->min_endpointing_delay ?? 0.5,
+                            'max_endpointing_delay' => $userMetadata['max_endpointing_delay'] ?? $existingUser->max_endpointing_delay ?? 6.0,
+                            'min_speech_duration' => $userMetadata['min_speech_duration'] ?? $existingUser->min_speech_duration ?? 0.05,
+                            'min_silence_duration' => $userMetadata['min_silence_duration'] ?? $existingUser->min_silence_duration ?? 0.55,
+                            'prefix_padding_duration' => $userMetadata['prefix_padding_duration'] ?? $existingUser->prefix_padding_duration ?? 0.5,
+                            'max_buffered_speech' => $userMetadata['max_buffered_speech'] ?? $existingUser->max_buffered_speech ?? 60,
+                            'activation_threshold' => $userMetadata['activation_threshold'] ?? $existingUser->activation_threshold ?? 0.5,
                         ]);
                         $user = $existingUser;
                         $this->line("Updated user: $email");
@@ -81,6 +88,13 @@ class SyncSupabaseUsers extends Command
                             'password' => bcrypt(Str::random(32)),
                             'supabase_id' => $supabaseId,
                             'user_questions' => $userMetadata['user_questions'] ?? null,
+                            'min_endpointing_delay' => $userMetadata['min_endpointing_delay'] ?? 0.5,
+                            'max_endpointing_delay' => $userMetadata['max_endpointing_delay'] ?? 6.0,
+                            'min_speech_duration' => $userMetadata['min_speech_duration'] ?? 0.05,
+                            'min_silence_duration' => $userMetadata['min_silence_duration'] ?? 0.55,
+                            'prefix_padding_duration' => $userMetadata['prefix_padding_duration'] ?? 0.5,
+                            'max_buffered_speech' => $userMetadata['max_buffered_speech'] ?? 60,
+                            'activation_threshold' => $userMetadata['activation_threshold'] ?? 0.5,
                         ]);
                         $this->line("Created user: $email");
                     }
