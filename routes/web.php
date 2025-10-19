@@ -20,7 +20,7 @@ Route::get('/elderly-profiles', function () {
 
 Route::get('/elderly-profiles/{id}', function ($id) {
     return inertia('ElderlyProfileDetail', ['id' => $id]);
-})->name('elderly-profiles.show');
+})->name('elderly-profiles.detail');
 
 // User-side elderly profile management routes
 Route::prefix('elderly-profiles')->group(function () {
