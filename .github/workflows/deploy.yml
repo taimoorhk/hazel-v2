@@ -7,6 +7,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -20,17 +21,21 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: mbstring, bcmath, xml, gd, pdo_sqlite # adjust if needed
+          extensions: mbstring, bcmath, xml, gd, pdo_sqlite
 
-      - name: Install composer
-        run: composer --version || php -r "copy('https://getcomposer.org/installer','composer-setup.php');" && php composer-setup.php --install-dir=/usr/local/bin --filename=composer
+      - name: Install Composer
+        run: |
+          composer --version || (
+            php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+            php composer-setup.php --install-dir=/usr/local/bin --filename=composer
+          )
 
-      - name: Copy SSH key
-        uses: webfactory/ssh-agent@v0.8.1
+      - name: Start SSH Agent and Add Key
+        uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.DROPLET_SSH_KEY }}
 
-      - name: Deploy over SSH
+      - name: Deploy to DigitalOcean Droplet
         uses: appleboy/ssh-action@v0.1.7
         with:
           host: ${{ secrets.DROPLET_HOST }}
@@ -40,24 +45,22 @@ jobs:
           script: |
             set -e
             cd ${{ secrets.DROPLET_PATH }}
-            # Make sure working dir is clean
+            echo "📦 Updating repository..."
             git fetch --all
             git reset --hard origin/main
             git clean -fd
-            # Install PHP deps
+            echo "⚙️ Installing dependencies..."
             composer install --no-interaction --prefer-dist --optimize-autoloader
-            # Build frontend
             npm ci
             npm run build
-            # Optional DB migrations (uncomment if you're ready)
-            # php artisan migrate --force
-            # Optimize
+            echo "🧹 Optimizing Laravel..."
             php artisan config:cache
             php artisan route:cache
             php artisan view:cache
-            # Permissions
+            echo "🔐 Fixing permissions..."
             chown -R forge:forge ${{ secrets.DROPLET_PATH }}
             chmod -R 775 ${{ secrets.DROPLET_PATH }}/storage ${{ secrets.DROPLET_PATH }}/bootstrap/cache || true
-            # Restart services
+            echo "🔄 Restarting services..."
             systemctl restart php8.3-fpm || true
-            systemctl restart nginx || true
+            systemctl reload nginx || true
+            echo "✅ Deployment complete!"
