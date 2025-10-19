@@ -24,9 +24,9 @@ Route::get('/elderly-profiles/{id}', function ($id) {
 
 // User-side elderly profile management routes
 Route::prefix('elderly-profiles')->group(function () {
-    Route::post('/', [App\Http\Controllers\ElderlyProfileController::class, 'store'])->name('elderly-profiles.store');
-    Route::patch('/{profile}', [App\Http\Controllers\ElderlyProfileController::class, 'update'])->name('elderly-profiles.update');
-    Route::patch('/{profile}/status', [App\Http\Controllers\ElderlyProfileController::class, 'updateStatus'])->name('elderly-profiles.update-status');
+    Route::post('/', [App\Http\Controllers\ElderlyProfileController::class, 'store'])->name('frontend.elderly-profiles.store');
+    Route::patch('/{profile}', [App\Http\Controllers\ElderlyProfileController::class, 'update'])->name('frontend.elderly-profiles.update');
+    Route::patch('/{profile}/status', [App\Http\Controllers\ElderlyProfileController::class, 'updateStatus'])->name('frontend.elderly-profiles.update-status');
 });
 
 Route::get('dashboard', function () {
