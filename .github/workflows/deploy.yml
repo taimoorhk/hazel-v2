@@ -1,0 +1,63 @@
+name: Deploy to Hazel Droplet
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, bcmath, xml, gd, pdo_sqlite # adjust if needed
+
+      - name: Install composer
+        run: composer --version || php -r "copy('https://getcomposer.org/installer','composer-setup.php');" && php composer-setup.php --install-dir=/usr/local/bin --filename=composer
+
+      - name: Copy SSH key
+        uses: webfactory/ssh-agent@v0.8.1
+        with:
+          ssh-private-key: ${{ secrets.DROPLET_SSH_KEY }}
+
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          port: 22
+          script: |
+            set -e
+            cd ${{ secrets.DROPLET_PATH }}
+            # Make sure working dir is clean
+            git fetch --all
+            git reset --hard origin/main
+            git clean -fd
+            # Install PHP deps
+            composer install --no-interaction --prefer-dist --optimize-autoloader
+            # Build frontend
+            npm ci
+            npm run build
+            # Optional DB migrations (uncomment if you're ready)
+            # php artisan migrate --force
+            # Optimize
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+            # Permissions
+            chown -R forge:forge ${{ secrets.DROPLET_PATH }}
+            chmod -R 775 ${{ secrets.DROPLET_PATH }}/storage ${{ secrets.DROPLET_PATH }}/bootstrap/cache || true
+            # Restart services
+            systemctl restart php8.3-fpm || true
+            systemctl restart nginx || true
