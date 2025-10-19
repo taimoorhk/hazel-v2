@@ -45,22 +45,26 @@ jobs:
           script: |
             set -e
             cd ${{ secrets.DROPLET_PATH }}
-            echo "📦 Updating repository..."
+            echo " Updating repository..."
             git fetch --all
             git reset --hard origin/main
             git clean -fd
-            echo "⚙️ Installing dependencies..."
+            echo " Installing dependencies..."
             composer install --no-interaction --prefer-dist --optimize-autoloader
             npm ci
             npm run build
-            echo "🧹 Optimizing Laravel..."
+            echo " Clearing old caches..."
+            php artisan optimize:clear || true
+            
+            echo " Rebuilding optimized caches..."
             php artisan config:cache
             php artisan route:cache
             php artisan view:cache
-            echo "🔐 Fixing permissions..."
+
+            echo " Fixing permissions..."
             chown -R forge:forge ${{ secrets.DROPLET_PATH }}
             chmod -R 775 ${{ secrets.DROPLET_PATH }}/storage ${{ secrets.DROPLET_PATH }}/bootstrap/cache || true
-            echo "🔄 Restarting services..."
+            echo " Restarting services..."
             systemctl restart php8.3-fpm || true
             systemctl reload nginx || true
-            echo "✅ Deployment complete!"
+            echo " Deployment complete!"
