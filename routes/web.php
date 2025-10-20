@@ -74,6 +74,17 @@ Route::get('/custom-settings', function () {
 
 Route::patch('/custom-settings', [App\Http\Controllers\CustomSettingsController::class, 'update'])->name('custom-settings.update');
 
+Route::get('/reports', function () {
+    // Check if user is authenticated and has the right role
+    if (auth()->check()) {
+        $user = auth()->user();
+        // If user has Organization role, redirect to dashboard
+        if ($user->role === 'Organization') {
+            return redirect()->route('dashboard')->with('message', 'Access denied. Reports are not available for Organization users.');
+        }
+    }
+    return Inertia::render('Reports');
+})->name('reports');
 
 Route::get('/login', function () {
     return Inertia::render('auth/Login');

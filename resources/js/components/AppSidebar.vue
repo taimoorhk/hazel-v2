@@ -5,7 +5,7 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, Users, Shield, Settings } from 'lucide-vue-next';
+import { BookOpen, Folder, LayoutGrid, Users, BarChart3, Shield, Settings } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 import { useSupabaseUser } from '@/composables/useSupabaseUser';
 import { computed } from 'vue';
@@ -15,6 +15,11 @@ const mainNavItems: NavItem[] = [
         title: 'Dashboard',
         href: '/dashboard',
         icon: LayoutGrid,
+    },
+    {
+        title: 'Reports',
+        href: '/reports',
+        icon: BarChart3,
     },
     {
         title: 'Elderly Profiles',
@@ -57,6 +62,9 @@ const filteredMainNavItems = computed(() => {
   
   if (meta && meta.role === 'Normal User') {
     items = items.filter(item => item.title !== 'Elderly Profiles');
+  }
+  if (meta && meta.role === 'Organization') {
+    items = items.filter(item => item.title !== 'Reports');
   }
   return items;
 });
