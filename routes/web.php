@@ -9,7 +9,16 @@ use Inertia\Inertia;
 
 
 Route::get('/', function () {
-    return Inertia::render('Welcome');
+    // Check if user is authenticated via Supabase
+    $user = auth()->user();
+    
+    if ($user) {
+        // User is authenticated, redirect to dashboard
+        return redirect()->route('dashboard');
+    } else {
+        // User is not authenticated, redirect to login
+        return redirect()->route('login');
+    }
 })->name('home');
 
 Route::resource('conversation', ConversationController::class);
