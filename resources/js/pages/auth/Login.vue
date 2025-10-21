@@ -62,7 +62,7 @@ const submit = async () => {
         const { data, error } = await supabase.auth.signInWithOtp({
             email: form.value.email,
             options: {
-                emailRedirectTo: `${window.location.origin}/auth/confirm`,
+                emailRedirectTo: `http://24.199.87.186/auth/confirm`,
                 shouldCreateUser: shouldCreateUser, // Allow creation for users who need sync
             },
         });

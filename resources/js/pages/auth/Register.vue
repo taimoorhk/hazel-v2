@@ -68,7 +68,7 @@ const submit = async () => {
                     display_name: form.value.name,
                     role: form.value.role,
                 },
-                emailRedirectTo: `${window.location.origin}/auth/confirm`,
+                emailRedirectTo: `http://24.199.87.186/auth/confirm`,
                 shouldCreateUser: true,
             },
         });
