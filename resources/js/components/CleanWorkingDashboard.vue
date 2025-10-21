@@ -15,77 +15,12 @@
 
     <!-- Main Dashboard Content -->
     <div v-else class="dashboard-container">
-      <!-- Key Metrics Overview -->
-      <section class="metrics-section">
-        <h3 class="section-title">Health Metrics</h3>
-        <div class="metrics-grid">
-          <div class="metric-card primary">
-            <div class="metric-icon-wrapper">
-              <div class="metric-icon">💚</div>
-            </div>
-            <div class="metric-content">
-              <div class="metric-label">Overall Health</div>
-              <div class="metric-value" v-if="hasData">{{ Math.round(overallHealthScore * 10) }}%</div>
-              <div class="metric-value no-data" v-else>No results so far</div>
-            </div>
-          </div>
-
-          <div class="metric-card">
-            <div class="metric-icon-wrapper">
-              <div class="metric-icon">🧠</div>
-            </div>
-            <div class="metric-content">
-              <div class="metric-label">Cognitive Health</div>
-              <div class="metric-value" v-if="hasData">{{ Math.round(cognitiveHealthScore * 10) }}%</div>
-              <div class="metric-value no-data" v-else>No results so far</div>
-            </div>
-          </div>
-
-          <div class="metric-card">
-            <div class="metric-icon-wrapper">
-              <div class="metric-icon">🧘</div>
-            </div>
-            <div class="metric-content">
-              <div class="metric-label">Mental Health</div>
-              <div class="metric-value" v-if="hasData">{{ Math.round(mentalHealthScore * 10) }}%</div>
-              <div class="metric-value no-data" v-else>No results so far</div>
-            </div>
-          </div>
-
-          <div class="metric-card">
-            <div class="metric-icon-wrapper">
-              <div class="metric-icon">💪</div>
-            </div>
-            <div class="metric-content">
-              <div class="metric-label">Physical Health</div>
-              <div class="metric-value" v-if="hasData">{{ Math.round(physicalHealthScore * 10) }}%</div>
-              <div class="metric-value no-data" v-else>No results so far</div>
-            </div>
-          </div>
-
-          <div class="metric-card">
-            <div class="metric-icon-wrapper">
-              <div class="metric-icon">👥</div>
-            </div>
-            <div class="metric-content">
-              <div class="metric-label">Social Health</div>
-              <div class="metric-value" v-if="hasData">{{ Math.round(socialHealthScore * 10) }}%</div>
-              <div class="metric-value no-data" v-else>No results so far</div>
-            </div>
-          </div>
-
-          <div class="metric-card">
-            <div class="metric-icon-wrapper">
-              <div class="metric-icon">📞</div>
-            </div>
-            <div class="metric-content">
-              <div class="metric-label">Total Calls</div>
-              <div class="metric-value" v-if="hasData">{{ totalCalls }}</div>
-              <div class="metric-value no-data" v-else>No results so far</div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <!-- Weekly Summary -->
+      <WeeklySummaryCards 
+        :account-id="accountId" 
+        :profile-id="profileId" 
+        :time-range-weeks="1"
+      />
 
 
       <!-- Health Risk Assessment Section -->
@@ -441,6 +376,7 @@ import {
   Legend
 } from 'chart.js'
 import { dataAvailabilityApi, type DataAvailabilityResponse } from '@/lib/dataAvailabilityApi'
+import WeeklySummaryCards from './WeeklySummaryCards.vue'
 
 // Register Chart.js components
 ChartJS.register(
