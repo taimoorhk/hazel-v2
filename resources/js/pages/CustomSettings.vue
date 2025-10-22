@@ -384,7 +384,7 @@
   </AppLayout>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, reactive, onMounted, watch } from 'vue'
 import AppLayout from '@/layouts/AppLayout.vue'
 import { useAuthGuard } from '@/composables/useAuthGuard'
@@ -432,7 +432,7 @@ const loadCurrentSettings = async () => {
         form.preferred_voice = userData.preferred_voice || 'sage'
       } else {
         // Fallback to user metadata from Supabase auth
-        const { data: { user: supabaseUser }, error } = await supabase.auth.getUser()
+        const { data: { user: supabaseUser } } = await supabase.auth.getUser()
         
         if (supabaseUser && supabaseUser.user_metadata) {
           const metadata = supabaseUser.user_metadata

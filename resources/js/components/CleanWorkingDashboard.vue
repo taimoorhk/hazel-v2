@@ -431,28 +431,28 @@ const hasData = computed(() => {
   // Fallback to stats data
   return statsData.value?.has_data || false
 })
-const dataMessage = computed(() => statsData.value?.message || 'Loading...')
-
-const overallHealthScore = computed(() => {
-  if (!hasData.value) return 0
-  return statsData.value?.aggregated_health_summary?.overall_health_score || 0
-})
-const cognitiveHealthScore = computed(() => {
-  if (!hasData.value) return 0
-  return statsData.value?.aggregated_health_summary?.cognitive_health_score || 0
-})
-const mentalHealthScore = computed(() => {
-  if (!hasData.value) return 0
-  return statsData.value?.aggregated_health_summary?.mental_health_score || 0
-})
-const physicalHealthScore = computed(() => {
-  if (!hasData.value) return 0
-  return statsData.value?.aggregated_health_summary?.physical_health_score || 0
-})
-const socialHealthScore = computed(() => {
-  if (!hasData.value) return 0
-  return statsData.value?.aggregated_health_summary?.social_health_score || 0
-})
+// Health score computed properties for future use
+// const dataMessage = computed(() => statsData.value?.message || 'Loading...')
+// const overallHealthScore = computed(() => {
+//   if (!hasData.value) return 0
+//   return statsData.value?.aggregated_health_summary?.overall_health_score || 0
+// })
+// const cognitiveHealthScore = computed(() => {
+//   if (!hasData.value) return 0
+//   return statsData.value?.aggregated_health_summary?.cognitive_health_score || 0
+// })
+// const mentalHealthScore = computed(() => {
+//   if (!hasData.value) return 0
+//   return statsData.value?.aggregated_health_summary?.mental_health_score || 0
+// })
+// const physicalHealthScore = computed(() => {
+//   if (!hasData.value) return 0
+//   return statsData.value?.aggregated_health_summary?.physical_health_score || 0
+// })
+// const socialHealthScore = computed(() => {
+//   if (!hasData.value) return 0
+//   return statsData.value?.aggregated_health_summary?.social_health_score || 0
+// })
 
 const totalCalls = computed(() => {
   if (!hasData.value) return 0
@@ -788,125 +788,125 @@ const createCharts = () => {
 }
 
 // Transform enhanced canary data to match component structure
-const transformEnhancedCanaryData = (canaryData: any) => {
-  return {
-    aggregated_health_summary: canaryData.aggregated_health_summary,
-    canary_analysis_files: canaryData.canary_analysis_files
-  }
-}
+// const transformEnhancedCanaryData = (canaryData: any) => {
+//   return {
+//     aggregated_health_summary: canaryData.aggregated_health_summary,
+//     canary_analysis_files: canaryData.canary_analysis_files
+//   }
+// }
 
 // Process real DigitalOcean canary analysis data
-const processRealCanaryData = (data: any) => {
-  if (!data.has_data || !data.canary_analysis_files || data.canary_analysis_files.length === 0) {
-    return data // Return as-is if no data
-  }
+// const processRealCanaryData = (data: any) => {
+//   if (!data.has_data || !data.canary_analysis_files || data.canary_analysis_files.length === 0) {
+//     return data // Return as-is if no data
+//   }
 
-  // Extract scores from the first canary analysis file
-  const canaryFile = data.canary_analysis_files[0]
-  const scores = canaryFile.canary_data.scores || []
+//   // Extract scores from the first canary analysis file
+//   const canaryFile = data.canary_analysis_files[0]
+//   const scores = canaryFile.canary_data.scores || []
   
-  // Process scores into a structured format
-  const processedScores: any = {}
-  scores.forEach((score: any) => {
-    const code = score.code
-    const result = score.data.result
+//   // Process scores into a structured format
+//   const processedScores: any = {}
+//   scores.forEach((score: any) => {
+//     const code = score.code
+//     const result = score.data.result
     
-    // Map scores to our dashboard structure
-    switch (code) {
-      case 'Mood_Overall':
-        processedScores.mood = result
-        break
-      case 'Energy_Overall':
-        processedScores.energy = result
-        break
-      case 'Depression_Overall':
-        processedScores.depression = result
-        break
-      case 'Anxiety_Overall':
-        processedScores.anxiety = result
-        break
-      case 'Stress_Overall':
-        processedScores.stress = result
-        break
-      case 'Parkinson_Category':
-        processedScores.parkinson = result
-        break
-      case 'Alzheimer_Category':
-        processedScores.alzheimer = result
-        break
-      case 'MCI_Category':
-        processedScores.mci = result
-        break
-      case 'Wellness_Overall':
-        processedScores.wellness = result
-        break
-    }
-  })
+//     // Map scores to our dashboard structure
+//     switch (code) {
+//       case 'Mood_Overall':
+//         processedScores.mood = result
+//         break
+//       case 'Energy_Overall':
+//         processedScores.energy = result
+//         break
+//       case 'Depression_Overall':
+//         processedScores.depression = result
+//         break
+//       case 'Anxiety_Overall':
+//         processedScores.anxiety = result
+//         break
+//       case 'Stress_Overall':
+//         processedScores.stress = result
+//         break
+//       case 'Parkinson_Category':
+//         processedScores.parkinson = result
+//         break
+//       case 'Alzheimer_Category':
+//         processedScores.alzheimer = result
+//         break
+//       case 'MCI_Category':
+//         processedScores.mci = result
+//         break
+//       case 'Wellness_Overall':
+//         processedScores.wellness = result
+//         break
+//     }
+//   })
 
-  // Calculate health scores based on real data
-  const wellnessScore = parseFloat(processedScores.wellness) || 0
-  const moodScore = processedScores.mood === 'good' ? 8 : processedScores.mood === 'medium' ? 6 : 4
-  const energyScore = parseFloat(processedScores.energy) || 0
-  const depressionRisk = processedScores.depression === 'medium' ? 6 : processedScores.depression === 'high' ? 8 : 3
-  const anxietyRisk = processedScores.anxiety === 'low' ? 2 : processedScores.anxiety === 'medium' ? 5 : 7
-  const parkinsonRisk = processedScores.parkinson === "Parkinson's Detected" ? 8 : 2
-  const alzheimerRisk = processedScores.alzheimer === "Alzheimer's not detected" ? 2 : 8
+//   // Calculate health scores based on real data
+//   const wellnessScore = parseFloat(processedScores.wellness) || 0
+//   const moodScore = processedScores.mood === 'good' ? 8 : processedScores.mood === 'medium' ? 6 : 4
+//   const energyScore = parseFloat(processedScores.energy) || 0
+//   const depressionRisk = processedScores.depression === 'medium' ? 6 : processedScores.depression === 'high' ? 8 : 3
+//   const anxietyRisk = processedScores.anxiety === 'low' ? 2 : processedScores.anxiety === 'medium' ? 5 : 7
+//   const parkinsonRisk = processedScores.parkinson === "Parkinson's Detected" ? 8 : 2
+//   const alzheimerRisk = processedScores.alzheimer === "Alzheimer's not detected" ? 2 : 8
 
-  console.log('📊 Processing scores:', {
-    wellnessScore,
-    moodScore,
-    energyScore,
-    depressionRisk,
-    anxietyRisk,
-    parkinsonRisk,
-    alzheimerRisk,
-    processedScores
-  })
+//   console.log('📊 Processing scores:', {
+//     wellnessScore,
+//     moodScore,
+//     energyScore,
+//     depressionRisk,
+//     anxietyRisk,
+//     parkinsonRisk,
+//     alzheimerRisk,
+//     processedScores
+//   })
 
-  // Create enhanced aggregated summary with real data
-  const enhancedSummary = {
-    ...data.aggregated_health_summary,
-    overall_health_score: wellnessScore > 0 ? Math.round(wellnessScore / 10 * 100) / 100 : 7.45,
-    cognitive_health_score: wellnessScore > 0 ? Math.round((wellnessScore - (alzheimerRisk + parkinsonRisk) / 2) / 10 * 100) / 100 : 6.45,
-    mental_health_score: wellnessScore > 0 ? Math.round((wellnessScore - (depressionRisk + anxietyRisk) / 2) / 10 * 100) / 100 : 6.95,
-    physical_health_score: wellnessScore > 0 ? Math.round((wellnessScore + energyScore) / 2 / 10 * 100) / 100 : 6.25,
-    social_health_score: wellnessScore > 0 ? Math.round((wellnessScore + moodScore) / 2 / 10 * 100) / 100 : 7.75,
-    total_calls: data.aggregated_health_summary.total_calls || 1,
-    alzheimer_risk_score: alzheimerRisk,
-    parkinson_risk_score: parkinsonRisk,
-    depression_risk_score: depressionRisk,
-    anxiety_risk_score: anxietyRisk,
-    fall_risk_score: Math.round((parkinsonRisk + anxietyRisk) / 2),
-    cognitive_risk_score: Math.round((alzheimerRisk + parkinsonRisk) / 2),
-    diagnosed_conditions_count: (parkinsonRisk > 5 ? 1 : 0) + (alzheimerRisk > 5 ? 1 : 0),
-    suspected_conditions_count: (depressionRisk > 5 ? 1 : 0) + (anxietyRisk > 5 ? 1 : 0),
-    risk_factors_count: [alzheimerRisk, parkinsonRisk, depressionRisk, anxietyRisk].filter(r => r > 5).length,
-    monitored_conditions_count: [alzheimerRisk, parkinsonRisk, depressionRisk, anxietyRisk].filter(r => r > 3).length,
-    // Add processed scores for chart data
-    processed_scores: processedScores
-  }
+//   // Create enhanced aggregated summary with real data
+//   const enhancedSummary = {
+//     ...data.aggregated_health_summary,
+//     overall_health_score: wellnessScore > 0 ? Math.round(wellnessScore / 10 * 100) / 100 : 7.45,
+//     cognitive_health_score: wellnessScore > 0 ? Math.round((wellnessScore - (alzheimerRisk + parkinsonRisk) / 2) / 10 * 100) / 100 : 6.45,
+//     mental_health_score: wellnessScore > 0 ? Math.round((wellnessScore - (depressionRisk + anxietyRisk) / 2) / 10 * 100) / 100 : 6.95,
+//     physical_health_score: wellnessScore > 0 ? Math.round((wellnessScore + energyScore) / 2 / 10 * 100) / 100 : 6.25,
+//     social_health_score: wellnessScore > 0 ? Math.round((wellnessScore + moodScore) / 2 / 10 * 100) / 100 : 7.75,
+//     total_calls: data.aggregated_health_summary.total_calls || 1,
+//     alzheimer_risk_score: alzheimerRisk,
+//     parkinson_risk_score: parkinsonRisk,
+//     depression_risk_score: depressionRisk,
+//     anxiety_risk_score: anxietyRisk,
+//     fall_risk_score: Math.round((parkinsonRisk + anxietyRisk) / 2),
+//     cognitive_risk_score: Math.round((alzheimerRisk + parkinsonRisk) / 2),
+//     diagnosed_conditions_count: (parkinsonRisk > 5 ? 1 : 0) + (alzheimerRisk > 5 ? 1 : 0),
+//     suspected_conditions_count: (depressionRisk > 5 ? 1 : 0) + (anxietyRisk > 5 ? 1 : 0),
+//     risk_factors_count: [alzheimerRisk, parkinsonRisk, depressionRisk, anxietyRisk].filter(r => r > 5).length,
+//     monitored_conditions_count: [alzheimerRisk, parkinsonRisk, depressionRisk, anxietyRisk].filter(r => r > 3).length,
+//     // Add processed scores for chart data
+//     processed_scores: processedScores
+//   }
 
-  return {
-    ...data,
-    aggregated_health_summary: enhancedSummary,
-    // Transform canary files for chart processing
-    canary_analysis_files: data.canary_analysis_files.map((file: any) => ({
-      filename: file.filename,
-      canary_data: {
-        ...file.canary_data,
-        // Create analysis object for charts
-        analysis: {
-          mood: processedScores.mood || 'neutral',
-          engagement: wellnessScore > 70 ? 'high' : wellnessScore > 50 ? 'medium' : 'low',
-          energy_level: energyScore > 60 ? 'good' : energyScore > 40 ? 'moderate' : 'low',
-          cognitive_function: alzheimerRisk < 3 ? 'good' : alzheimerRisk < 6 ? 'fair' : 'poor',
-          memory_recall: processedScores.mci === 'MCI not detected' ? 'good' : 'difficulty',
-          sleep_quality: moodScore > 7 ? 'good' : moodScore > 5 ? 'fair' : 'poor'
-        }
-      }
-    }))
-  }
-}
+//   return {
+//     ...data,
+//     aggregated_health_summary: enhancedSummary,
+//     // Transform canary files for chart processing
+//     canary_analysis_files: data.canary_analysis_files.map((file: any) => ({
+//       filename: file.filename,
+//       canary_data: {
+//         ...file.canary_data,
+//         // Create analysis object for charts
+//         analysis: {
+//           mood: processedScores.mood || 'neutral',
+//           engagement: wellnessScore > 70 ? 'high' : wellnessScore > 50 ? 'medium' : 'low',
+//           energy_level: energyScore > 60 ? 'good' : energyScore > 40 ? 'moderate' : 'low',
+//           cognitive_function: alzheimerRisk < 3 ? 'good' : alzheimerRisk < 6 ? 'fair' : 'poor',
+//           memory_recall: processedScores.mci === 'MCI not detected' ? 'good' : 'difficulty',
+//           sleep_quality: moodScore > 7 ? 'good' : moodScore > 5 ? 'fair' : 'poor'
+//         }
+//       }
+//     }))
+//   }
+// }
 
 // Check data availability first
 const checkDataAvailability = async () => {

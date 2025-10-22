@@ -49,11 +49,11 @@ import { router } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Button } from '@/components/ui/button';
 
-interface Props {
-  sessionId: string;
-}
+// interface Props {
+//   sessionId: string;
+// }
 
-const props = defineProps<Props>();
+// const props = defineProps<Props>();
 
 const goToDashboard = () => {
   router.visit(route('dashboard'));

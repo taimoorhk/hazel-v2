@@ -438,7 +438,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { statsApi, type StatsSummaryResponse } from '../lib/statsApi'
+// import { statsApi, type StatsSummaryResponse } from '../lib/statsApi'
 import StatsChart from './StatsChart.vue'
 
 interface Props {
@@ -1546,90 +1546,90 @@ const sleepQualityTrendData = computed(() => {
   }
 })
 
-const healthTopicsData = computed(() => {
-  if (!statsData.value) return { labels: [], datasets: [] }
+// const healthTopicsData = computed(() => {
+//   if (!statsData.value) return { labels: [], datasets: [] }
   
-  const topicCounts = statsData.value.summary
-    .flatMap(call => call.topics)
-    .filter(topic => topic && typeof topic === 'string')
-    .reduce((acc, topic) => {
-      acc[topic] = (acc[topic] || 0) + 1
-      return acc
-    }, {} as Record<string, number>)
+//   const topicCounts = statsData.value.summary
+//     .flatMap(call => call.topics)
+//     .filter(topic => topic && typeof topic === 'string')
+//     .reduce((acc, topic) => {
+//       acc[topic] = (acc[topic] || 0) + 1
+//       return acc
+//     }, {} as Record<string, number>)
   
-  const sortedTopics = Object.entries(topicCounts)
-    .sort(([,a], [,b]) => b - a)
-    .slice(0, 8)
+//   const sortedTopics = Object.entries(topicCounts)
+//     .sort(([,a], [,b]) => b - a)
+//     .slice(0, 8)
   
-  const labels = sortedTopics.map(([topic]) => topic)
-  const data = sortedTopics.map(([, count]) => count)
+//   const labels = sortedTopics.map(([topic]) => topic)
+//   const data = sortedTopics.map(([, count]) => count)
   
-  return {
-    labels,
-    datasets: [{
-      label: 'Health Topic Frequency',
-      data,
-      backgroundColor: '#10b981',
-      borderRadius: 4
-    }]
-  }
-})
+//   return {
+//     labels,
+//     datasets: [{
+//       label: 'Health Topic Frequency',
+//       data,
+//       backgroundColor: '#10b981',
+//       borderRadius: 4
+//     }]
+//   }
+// })
 
-const moodClarityTrendData = computed(() => {
-  if (!statsData.value) return { labels: [], datasets: [] }
+// const moodClarityTrendData = computed(() => {
+//   if (!statsData.value) return { labels: [], datasets: [] }
   
-  // Group calls by week and calculate mood/clarity trends
-  const weeklyTrends = statsData.value.summary.reduce((acc, call) => {
-    const date = new Date(call.timestamp)
-    const weekStart = new Date(date.getFullYear(), date.getMonth(), date.getDate() - date.getDay())
-    const weekKey = weekStart.toISOString().split('T')[0]
+//   // Group calls by week and calculate mood/clarity trends
+//   const weeklyTrends = statsData.value.summary.reduce((acc, call) => {
+//     const date = new Date(call.timestamp)
+//     const weekStart = new Date(date.getFullYear(), date.getMonth(), date.getDate() - date.getDay())
+//     const weekKey = weekStart.toISOString().split('T')[0]
     
-    if (!acc[weekKey]) {
-      acc[weekKey] = { mood: [], clarity: [] }
-    }
+//     if (!acc[weekKey]) {
+//       acc[weekKey] = { mood: [], clarity: [] }
+//     }
     
-    // Map mood values to numbers for trend calculation
-    const moodValue = getMoodValue(call.mood || 'neutral')
-    const clarityValue = getClarityValue(call.clarity || 'good')
+//     // Map mood values to numbers for trend calculation
+//     const moodValue = getMoodValue(call.mood || 'neutral')
+//     const clarityValue = getClarityValue(call.clarity || 'good')
     
-    acc[weekKey].mood.push(moodValue)
-    acc[weekKey].clarity.push(clarityValue)
+//     acc[weekKey].mood.push(moodValue)
+//     acc[weekKey].clarity.push(clarityValue)
     
-    return acc
-  }, {} as Record<string, { mood: number[]; clarity: number[] }>)
+//     return acc
+//   }, {} as Record<string, { mood: number[]; clarity: number[] }>)
   
-  const labels = Object.keys(weeklyTrends).sort()
-  const moodData = labels.map(week => {
-    const moods = weeklyTrends[week].mood
-    return moods.length > 0 ? moods.reduce((a, b) => a + b, 0) / moods.length : 0
-  })
-  const clarityData = labels.map(week => {
-    const clarities = weeklyTrends[week].clarity
-    return clarities.length > 0 ? clarities.reduce((a, b) => a + b, 0) / clarities.length : 0
-  })
+//   const labels = Object.keys(weeklyTrends).sort()
+//   const moodData = labels.map(week => {
+//     const moods = weeklyTrends[week].mood
+//     return moods.length > 0 ? moods.reduce((a, b) => a + b, 0) / moods.length : 0
+//   })
+//   const clarityData = labels.map(week => {
+//     const clarities = weeklyTrends[week].clarity
+//     return clarities.length > 0 ? clarities.reduce((a, b) => a + b, 0) / clarities.length : 0
+//   })
   
-  return {
-    labels,
-    datasets: [
-      {
-        label: 'Mood Score',
-        data: moodData,
-        borderColor: '#8b5cf6',
-        backgroundColor: 'rgba(139, 92, 246, 0.1)',
-        fill: false,
-        tension: 0.4
-      },
-      {
-        label: 'Clarity Score',
-        data: clarityData,
-        borderColor: '#10b981',
-        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-        fill: false,
-        tension: 0.4
-      }
-    ]
-  }
-})
+//   return {
+//     labels,
+//     datasets: [
+//       {
+//         label: 'Mood Score',
+//         data: moodData,
+//         borderColor: '#8b5cf6',
+//         backgroundColor: 'rgba(139, 92, 246, 0.1)',
+//         fill: false,
+//         tension: 0.4
+//       },
+//       {
+//         label: 'Clarity Score',
+//         data: clarityData,
+//         borderColor: '#10b981',
+//         backgroundColor: 'rgba(16, 185, 129, 0.1)',
+//         fill: false,
+//         tension: 0.4
+//       }
+//     ]
+//   }
+// })
 
 // Utility functions
 const formatDuration = (seconds: number): string => {
@@ -1763,77 +1763,77 @@ const getSleepQualityValue = (sleep: string): number => {
   }
 }
 
-const getAppetiteValue = (appetite: string): number => {
-  switch (appetite?.toLowerCase()) {
-    case 'good': case 'normal': case 'excellent': return 3
-    case 'fair': case 'moderate': return 2
-    case 'poor': case 'reduced': case 'low': return 1
-    default: return 2
-  }
-}
+// const getAppetiteValue = (appetite: string): number => {
+//   switch (appetite?.toLowerCase()) {
+//     case 'good': case 'normal': case 'excellent': return 3
+//     case 'fair': case 'moderate': return 2
+//     case 'poor': case 'reduced': case 'low': return 1
+//     default: return 2
+//   }
+// }
 
-const getMobilityValue = (mobility: string): number => {
-  switch (mobility?.toLowerCase()) {
-    case 'excellent': case 'good': return 3
-    case 'fair': case 'moderate': return 2
-    case 'poor': case 'limited': case 'bad': return 1
-    default: return 2
-  }
-}
+// const getMobilityValue = (mobility: string): number => {
+//   switch (mobility?.toLowerCase()) {
+//     case 'excellent': case 'good': return 3
+//     case 'fair': case 'moderate': return 2
+//     case 'poor': case 'limited': case 'bad': return 1
+//     default: return 2
+//   }
+// }
 
-const getMemoryValue = (memory: string): number => {
-  switch (memory?.toLowerCase()) {
-    case 'excellent': case 'clear': case 'good': return 3
-    case 'fair': case 'moderate': return 2
-    case 'poor': case 'unclear': case 'bad': return 1
-    default: return 2
-  }
-}
+// const getMemoryValue = (memory: string): number => {
+//   switch (memory?.toLowerCase()) {
+//     case 'excellent': case 'clear': case 'good': return 3
+//     case 'fair': case 'moderate': return 2
+//     case 'poor': case 'unclear': case 'bad': return 1
+//     default: return 2
+//   }
+// }
 
-const getIndependenceValue = (independence: string): number => {
-  switch (independence?.toLowerCase()) {
-    case 'excellent': case 'good': case 'high': return 3
-    case 'fair': case 'moderate': return 2
-    case 'poor': case 'limited': case 'low': return 1
-    default: return 2
-  }
-}
+// const getIndependenceValue = (independence: string): number => {
+//   switch (independence?.toLowerCase()) {
+//     case 'excellent': case 'good': case 'high': return 3
+//     case 'fair': case 'moderate': return 2
+//     case 'poor': case 'limited': case 'low': return 1
+//     default: return 2
+//   }
+// }
 
-const getMedicationComplianceValue = (compliance: string): number => {
-  switch (compliance?.toLowerCase()) {
-    case 'excellent': case 'perfect': return 3
-    case 'good': case 'moderate': return 2
-    case 'poor': case 'bad': return 1
-    default: return 2
-  }
-}
+// const getMedicationComplianceValue = (compliance: string): number => {
+//   switch (compliance?.toLowerCase()) {
+//     case 'excellent': case 'perfect': return 3
+//     case 'good': case 'moderate': return 2
+//     case 'poor': case 'bad': return 1
+//     default: return 2
+//   }
+// }
 
-const getPainLevelValue = (pain: string): number => {
-  switch (pain?.toLowerCase()) {
-    case 'none': case 'no pain': return 3
-    case 'mild': case 'low': return 2
-    case 'moderate': case 'high': case 'severe': return 1
-    default: return 2
-  }
-}
+// const getPainLevelValue = (pain: string): number => {
+//   switch (pain?.toLowerCase()) {
+//     case 'none': case 'no pain': return 3
+//     case 'mild': case 'low': return 2
+//     case 'moderate': case 'high': case 'severe': return 1
+//     default: return 2
+//   }
+// }
 
-const getBalanceValue = (balance: string): number => {
-  switch (balance?.toLowerCase()) {
-    case 'stable': case 'excellent': return 3
-    case 'fair': case 'moderate': return 2
-    case 'unstable': case 'poor': case 'bad': return 1
-    default: return 2
-  }
-}
+// const getBalanceValue = (balance: string): number => {
+//   switch (balance?.toLowerCase()) {
+//     case 'stable': case 'excellent': return 3
+//     case 'fair': case 'moderate': return 2
+//     case 'unstable': case 'poor': case 'bad': return 1
+//     default: return 2
+//   }
+// }
 
-const getSocialConnectionValue = (social: string): number => {
-  switch (social?.toLowerCase()) {
-    case 'strong': case 'excellent': return 3
-    case 'moderate': case 'fair': return 2
-    case 'weak': case 'poor': return 1
-    default: return 2
-  }
-}
+// const getSocialConnectionValue = (social: string): number => {
+//   switch (social?.toLowerCase()) {
+//     case 'strong': case 'excellent': return 3
+//     case 'moderate': case 'fair': return 2
+//     case 'weak': case 'poor': return 1
+//     default: return 2
+//   }
+// }
 
 onMounted(() => {
   console.log('📊 StatsDashboard mounted with props:', props)

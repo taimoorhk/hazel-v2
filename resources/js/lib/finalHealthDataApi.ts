@@ -124,7 +124,7 @@ class FinalHealthDataApi {
     try {
       const response = await this.getFinalHealthData(accountId, profileId)
       return response.data.has_data
-    } catch (error) {
+    } catch {
       return false
     }
   }

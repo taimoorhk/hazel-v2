@@ -2,7 +2,7 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head } from '@inertiajs/vue3';
 import { useAuthGuard } from '@/composables/useAuthGuard';
-import { useSupabaseUser } from '@/composables/useSupabaseUser';
+// import { useSupabaseUser } from '@/composables/useSupabaseUser';
 import { ref, onMounted } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -22,7 +22,7 @@ interface ElderlyProfile {
 
 
 useAuthGuard();
-const { user } = useSupabaseUser();
+// const { user } = useSupabaseUser();
 const page = usePage();
 
 // Reactive data

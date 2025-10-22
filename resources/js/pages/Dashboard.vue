@@ -1,72 +1,190 @@
+<template>
+  <AppLayout>
+    <Head title="Dashboard" />
+    
+    <div class="dashboard-container">
+      <!-- Welcome Section -->
+      <div class="welcome-section">
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-3xl font-bold text-gray-900">
+              Welcome, {{ user?.user_metadata?.name || 'User' }}!
+            </h1>
+            <p class="mt-1 text-sm text-gray-600">
+              Caregiver dashboard overview.
+            </p>
+          </div>
+          <button
+            @click="goToElderlyProfiles"
+            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            + Add Elderly Profile
+          </button>
+        </div>
+      </div>
+
+      <!-- Health Analytics Dashboard -->
+      <div class="health-analytics-section">
+        <div class="flex items-center space-x-3 mb-6">
+          <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-2xl font-bold text-gray-900">Health Analytics Dashboard</h2>
+            <p class="text-sm text-gray-600">Health monitoring and analytics for all profiles.</p>
+          </div>
+        </div>
+
+        <!-- Weekly Summary Cards -->
+        <WeeklySummaryCards 
+          :account-id="accountId" 
+          :profile-id="profileId" 
+          :time-range-weeks="1"
+          :auto-refresh="true"
+          :refresh-interval="300000"
+          :use-mock-data="true"
+        />
+
+        <!-- Health Risk Assessment -->
+        <div class="mt-8">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Health Risk Assessment</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                  <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 class="text-sm font-medium text-gray-900">Alzheimer's Risk</h4>
+                  <p class="text-2xl font-bold text-gray-900">1.5/10</p>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    Low Risk
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                  <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 class="text-sm font-medium text-gray-900">Parkinson's Risk</h4>
+                  <p class="text-2xl font-bold text-gray-900">2/10</p>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    Low Risk
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.29-1.009-5.824-2.709M15 6.291A7.962 7.962 0 0012 4c-2.34 0-4.29 1.009-5.824 2.709" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 class="text-sm font-medium text-gray-900">Depression Risk</h4>
+                  <p class="text-2xl font-bold text-gray-900">1.8/10</p>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    Low Risk
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                  <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 class="text-sm font-medium text-gray-900">Anxiety Risk</h4>
+                  <p class="text-2xl font-bold text-gray-900">1.2/10</p>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    Low Risk
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 class="text-sm font-medium text-gray-900">Fall Risk</h4>
+                  <p class="text-2xl font-bold text-gray-900">2.5/10</p>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    Low Risk
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                  <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 class="text-sm font-medium text-gray-900">Cognitive Risk</h4>
+                  <p class="text-2xl font-bold text-gray-900">2/10</p>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    Low Risk
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </AppLayout>
+</template>
+
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useAuthGuard } from '@/composables/useAuthGuard';
 import { useSupabaseUser } from '@/composables/useSupabaseUser';
-import { supabase } from '@/lib/supabaseClient';
-import type { User } from '@supabase/supabase-js';
-import CleanWorkingDashboard from '@/components/CleanWorkingDashboard.vue';
+import WeeklySummaryCards from '@/components/WeeklySummaryCards.vue';
+import { router } from '@inertiajs/vue3';
 
-const { loading } = useAuthGuard();
+// Auth guard
+useAuthGuard();
+
+// Get user data
 const { user } = useSupabaseUser();
 
-// Add a ref for the latest user details
-const realtimeUser = ref<User | null>(null);
-
-
-onMounted(async () => {
-  // Wait for session to be available
-  const waitForSession = async () => {
-    if (user.value) {
-      // Fetch the latest user details from Supabase
-      const { data } = await supabase.auth.getUser();
-      if (data && data.user) {
-        realtimeUser.value = data.user;
-      }
-      // Listen for user changes in realtime
-      supabase.auth.onAuthStateChange((_event, newSession) => {
-        if (newSession && newSession.user) {
-          realtimeUser.value = newSession.user;
-        }
-      });
-    } else {
-      setTimeout(waitForSession, 500);
-    }
-  };
-  
-  await waitForSession();
-});
-
-function isNormalUser() {
-  // Check the role from Supabase metadata
-  const meta = (realtimeUser.value && realtimeUser.value.user_metadata) || (user && user.value && user.value.user_metadata);
-  return meta && meta.role === 'Normal User';
-}
-
-function isCaregiverOrOrganization() {
-  // Check the role from Supabase metadata
-  const meta = (realtimeUser.value && realtimeUser.value.user_metadata) || (user && user.value && user.value.user_metadata);
-  const role = meta?.role;
-  
-  // If no role is assigned, assume caregiver/organization for users who aren't explicitly "Normal User"
-  if (!role) {
-    return true; // Show button by default for users without explicit roles
-  }
-  
-  return role === 'Caregiver' || role === 'Organization' || role === 'Admin';
-}
-
+// Get account and profile IDs based on user email
 function getUserAccountId() {
-  // Get the current authenticated user
-  const currentUser = realtimeUser.value || user.value;
+  const currentUser = user.value;
   if (!currentUser?.email) {
-    return null;
+    return 6; // Default fallback
   }
   
-  // Map email addresses to their respective account IDs
   const emailToAccountId = {
     'mtaimoorhas1@gmail.com': 6,
     'jsahib@gmail.com': 6, // This is an elderly profile under account 6
@@ -74,15 +192,12 @@ function getUserAccountId() {
     // Add more mappings as needed
   };
   
-  return emailToAccountId[currentUser.email] || null;
+  return emailToAccountId[currentUser.email] || 6; // Default to account 6
 }
 
 function getUserProfileId() {
-  // For normal users, we'll use their user ID as the profile ID
-  const currentUser = realtimeUser.value || user.value;
+  const currentUser = user.value;
   if (currentUser?.email) {
-    // For main account holders, use profile ID -1
-    // For elderly profiles, use their specific profile ID
     if (currentUser.email === 'jsahib@gmail.com') {
       return 15; // Elderly profile ID
     }
@@ -91,131 +206,34 @@ function getUserProfileId() {
   return -1; // Default fallback
 }
 
+// Reactive data
+const accountId = ref(getUserAccountId());
+const profileId = ref(getUserProfileId());
+
+// Methods
+const goToElderlyProfiles = () => {
+  router.visit(route('elderly-profiles'));
+};
+
+// Update account/profile IDs when user changes
+onMounted(() => {
+  accountId.value = getUserAccountId();
+  profileId.value = getUserProfileId();
+});
 </script>
 
-<template>
-  <AppLayout>
-    <Head title="Dashboard" />
-    
-    <!-- Loading State -->
-    <div v-if="loading" class="flex items-center justify-center h-96">
-      <div class="text-center">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2871B5] mx-auto mb-4"></div>
-        <span class="text-lg text-[#2871B5]/70">Loading your dashboard...</span>
-      </div>
-    </div>
+<style scoped>
+.dashboard-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px;
+}
 
-    <!-- Main Dashboard Content -->
-    <div v-else-if="user" class="min-h-screen bg-gray-50">
-      <!-- Header -->
-      <div class="bg-white border-b border-gray-200 px-6 py-4">
-        <div class="flex justify-between items-start">
-          <div>
-            <h1 class="text-2xl font-bold text-gray-900">
-              Welcome, {{ 
-                realtimeUser?.user_metadata?.display_name ||
-                realtimeUser?.user_metadata?.name ||
-                user?.user_metadata?.display_name ||
-                user?.user_metadata?.name ||
-                user?.email?.split('@')[0] ||
-                'User'
-              }}!
-            </h1>
-            <p class="text-gray-600 mt-1">
-              {{ isNormalUser() ? 'Your personal health dashboard' : 'Caregiver dashboard overview' }}
-            </p>
-          </div>
-          
-          <!-- Add Elderly Profile Button for Caregivers/Organizations -->
-          <div v-if="isCaregiverOrOrganization()" class="flex-shrink-0">
-            <button 
-              @click="$inertia.visit('/elderly-profiles')"
-              class="inline-flex items-center px-4 py-2 bg-[#2871B5] text-white text-sm font-medium rounded-lg hover:bg-[#1e5a8a] focus:outline-none focus:ring-2 focus:ring-[#2871B5] focus:ring-offset-2 transition-colors duration-200"
-            >
-              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-              </svg>
-              Add Elderly Profile
-            </button>
-          </div>
-        </div>
-      </div>
+.welcome-section {
+  margin-bottom: 32px;
+}
 
-      <!-- Dashboard Content -->
-      <div class="p-6">
-        <!-- Health Analytics Dashboard -->
-        <Card class="mb-6">
-          <CardHeader>
-            <CardTitle class="text-xl font-semibold text-[#2871B5] flex items-center gap-2">
-              📊 Health Analytics Dashboard
-            </CardTitle>
-            <p class="text-gray-600 text-sm">
-              {{ isNormalUser() ? 'Your comprehensive health insights and conversation analytics' : 'Health monitoring and analytics for all profiles' }}
-            </p>
-          </CardHeader>
-          <CardContent>
-    <CleanWorkingDashboard
-      :profile-id="getUserProfileId()"
-      :account-id="getUserAccountId()"
-      :is-elderly-profile="false"
-    />
-          </CardContent>
-        </Card>
-
-
-        <!-- Quick Stats for Normal Users -->
-        <div v-if="isNormalUser()" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card class="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
-            <CardContent class="p-4">
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="text-sm font-medium text-green-700">Health Status</p>
-                  <p class="text-2xl font-bold text-green-800">Excellent</p>
-                </div>
-                <div class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
-                  <span class="text-white text-xl">💚</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card class="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
-            <CardContent class="p-4">
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="text-sm font-medium text-blue-700">Engagement</p>
-                  <p class="text-2xl font-bold text-blue-800">High</p>
-                </div>
-                <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
-                  <span class="text-white text-xl">📈</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card class="bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200">
-            <CardContent class="p-4">
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="text-sm font-medium text-purple-700">Mood</p>
-                  <p class="text-2xl font-bold text-purple-800">Positive</p>
-                </div>
-                <div class="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center">
-                  <span class="text-white text-xl">😊</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </div>
-
-    <!-- Error State -->
-    <div v-else class="flex items-center justify-center h-96">
-      <div class="text-center">
-        <div class="text-red-500 text-xl mb-2">⚠️</div>
-        <span class="text-lg text-red-500">Session error. Please log in again.</span>
-      </div>
-    </div>
-  </AppLayout>
-</template>
+.health-analytics-section {
+  margin-bottom: 32px;
+}
+</style>

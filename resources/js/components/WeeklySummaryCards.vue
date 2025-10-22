@@ -235,7 +235,7 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 const weeklyData = ref<any>(null)
 
-let refreshInterval: NodeJS.Timeout | null = null
+let refreshTimer: NodeJS.Timeout | null = null
 
 const fetchWeeklySummary = async () => {
   try {
@@ -396,13 +396,13 @@ onMounted(() => {
   fetchWeeklySummary()
   
   // Enable automatic refresh every 5 minutes (300000ms)
-  const interval = 300000 // 5 minutes
-  refreshInterval = setInterval(fetchWeeklySummary, interval)
+  const interval = props.refreshInterval || 300000 // 5 minutes
+  refreshTimer = setInterval(fetchWeeklySummary, interval)
 })
 
 onUnmounted(() => {
-  if (refreshInterval) {
-    clearInterval(refreshInterval)
+  if (refreshTimer) {
+    clearInterval(refreshTimer)
   }
 })
 </script>

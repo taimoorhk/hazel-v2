@@ -1,5 +1,5 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { finalHealthDataApi, type FinalHealthData, type ApiResponse } from '@/lib/finalHealthDataApi'
+import { finalHealthDataApi, type FinalHealthData } from '@/lib/finalHealthDataApi'
 
 export interface UseFinalHealthDataOptions {
   accountId: number
