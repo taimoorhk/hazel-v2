@@ -42,6 +42,18 @@ Route::get('dashboard', function () {
     return Inertia::render('Dashboard');
 })->name('dashboard');
 
+Route::get('/final-health-dashboard', function () {
+    return Inertia::render('FinalHealthDashboard');
+})->name('final-health-dashboard');
+
+Route::get('/weekly-summary-dashboard', function () {
+    return Inertia::render('WeeklySummaryDashboard');
+})->name('weekly-summary-dashboard');
+
+Route::get('/test-weekly-summary', function () {
+    return Inertia::render('TestWeeklySummary');
+})->name('test-weekly-summary');
+
 
 
 // Simple billing route (no backend authentication required)

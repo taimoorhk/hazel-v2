@@ -20,6 +20,9 @@
         :account-id="accountId" 
         :profile-id="profileId" 
         :time-range-weeks="1"
+        :auto-refresh="true"
+        :refresh-interval="300000"
+        :use-mock-data="true"
       />
 
 

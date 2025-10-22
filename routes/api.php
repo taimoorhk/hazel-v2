@@ -12,6 +12,7 @@ use App\Http\Controllers\AccurateCanaryDataController;
 use App\Http\Controllers\EnhancedCanaryDataController;
 use App\Http\Controllers\DataAvailabilityController;
 use App\Http\Controllers\RealtimeSyncController;
+use App\Http\Controllers\FinalHealthDataController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -107,4 +108,11 @@ Route::prefix('data-availability')->group(function () {
     Route::post('/elderly-profiles-data-status', [DataAvailabilityController::class, 'getElderlyProfilesDataStatus']);
     Route::post('/elderly-profiles-with-data', [DataAvailabilityController::class, 'getElderlyProfilesWithData']);
     Route::post('/comprehensive-elderly-profiles-status', [DataAvailabilityController::class, 'getComprehensiveElderlyProfilesStatus']);
+});
+
+// Final health data endpoints (3rd checkpoint data)
+Route::prefix('final-health-data')->group(function () {
+    Route::post('/get-final-data', [FinalHealthDataController::class, 'getFinalHealthData']);
+    Route::post('/get-multiple-users', [FinalHealthDataController::class, 'getMultipleUsersFinalData']);
+    Route::get('/realtime-sync-status', [FinalHealthDataController::class, 'getRealtimeSyncStatus']);
 });
