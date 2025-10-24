@@ -105,7 +105,7 @@ const resendMagicLink = async () => {
             <div class="space-y-4">
                 <h2 class="text-2xl font-bold text-gray-900">Check your email</h2>
                 <p class="text-gray-600">{{ successMsg }}</p>
-                <div class="bg-gray-50 p-4 rounded-lg">
+                <div class="p-4 rounded-lg" style="background-color: #f9fafb;">
                     <p class="text-sm text-gray-500">
                         Didn't receive the email? Check your spam folder or
                         <button 

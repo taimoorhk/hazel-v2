@@ -236,7 +236,8 @@ onUnmounted(() => {
 
 <style scoped>
 .final-health-dashboard {
-  @apply min-h-screen bg-gray-50;
+  min-height: 100vh;
+  background-color: #f3f4f6;
 }
 
 .animate-pulse {

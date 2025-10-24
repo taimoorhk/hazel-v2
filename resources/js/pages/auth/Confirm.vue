@@ -180,7 +180,7 @@ onMounted(async () => {
                 <XCircle class="h-16 w-16 text-red-500 mx-auto" />
                 <h2 class="text-2xl font-bold text-gray-900">Confirmation failed</h2>
                 <p class="text-red-600">{{ errorMsg }}</p>
-                <div class="bg-gray-50 p-4 rounded-lg text-xs">
+                <div class="p-4 rounded-lg text-xs" style="background-color: #f9fafb;">
                     <p><strong>Debug Info:</strong></p>
                     <p>Token: {{ token || 'Not found' }}</p>
                     <p>Type: {{ type || 'Not found' }}</p>

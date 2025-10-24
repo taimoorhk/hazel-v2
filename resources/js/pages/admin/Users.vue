@@ -46,7 +46,7 @@
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full">
-          <thead class="bg-gray-50 border-b border-gray-200">
+          <thead class="border-b border-gray-200" style="background-color: #f9fafb;">
             <tr>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 User
@@ -66,7 +66,7 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200">
-            <tr v-for="user in users.data" :key="user.id" class="hover:bg-gray-50">
+            <tr v-for="user in users.data" :key="user.id" class="hover:bg-gray-100">
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center">
                   <div class="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">

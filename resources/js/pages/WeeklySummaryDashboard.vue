@@ -138,7 +138,7 @@
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h2 class="text-lg font-semibold text-gray-900 mb-4">API Endpoints</h2>
           <div class="space-y-4">
-            <div class="bg-gray-50 rounded-lg p-4">
+            <div class="rounded-lg p-4" style="background-color: #f9fafb;">
               <h3 class="font-medium text-gray-900 mb-2">Weekly Summary Endpoint</h3>
               <code class="text-sm text-gray-600">
                 POST http://143.198.187.46:8001/conversations/weekly-summary
@@ -148,7 +148,7 @@
               </p>
             </div>
             
-            <div class="bg-gray-50 rounded-lg p-4">
+            <div class="rounded-lg p-4" style="background-color: #f9fafb;">
               <h3 class="font-medium text-gray-900 mb-2">Health Check Endpoint</h3>
               <code class="text-sm text-gray-600">
                 GET http://143.198.187.46:8001/health
@@ -197,7 +197,8 @@ onMounted(() => {
 
 <style scoped>
 .weekly-summary-dashboard {
-  @apply min-h-screen bg-gray-50;
+  min-height: 100vh;
+  background-color: #f9fafb;
 }
 
 .animate-spin {

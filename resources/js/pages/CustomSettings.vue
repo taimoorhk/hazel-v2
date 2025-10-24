@@ -1,7 +1,7 @@
 <template>
   <AppLayout>
     <!-- Loading state -->
-    <div v-if="loading" class="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div v-if="loading" class="min-h-screen flex items-center justify-center" style="background-color: #f9fafb;">
       <div class="text-center">
         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
         <p class="mt-4 text-gray-600">Loading...</p>
@@ -9,7 +9,7 @@
     </div>
 
     <!-- Main content -->
-    <div v-else class="min-h-screen bg-gray-50">
+    <div v-else class="min-h-screen" style="background-color: #f9fafb;">
       <!-- Header -->
       <div class="bg-white shadow-sm border-b border-gray-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -344,35 +344,35 @@
           <div class="p-6">
             <h3 class="text-lg font-medium text-gray-900 mb-4">Current Settings</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div class="bg-gray-50 p-3 rounded-md">
+              <div class="p-3 rounded-md" style="background-color: #f9fafb;">
                 <div class="text-sm font-medium text-gray-700">Min Endpointing Delay</div>
                 <div class="text-lg font-semibold text-blue-600">{{ form.min_endpointing_delay }}s</div>
               </div>
-              <div class="bg-gray-50 p-3 rounded-md">
+              <div class="p-3 rounded-md" style="background-color: #f9fafb;">
                 <div class="text-sm font-medium text-gray-700">Max Endpointing Delay</div>
                 <div class="text-lg font-semibold text-blue-600">{{ form.max_endpointing_delay }}s</div>
               </div>
-              <div class="bg-gray-50 p-3 rounded-md">
+              <div class="p-3 rounded-md" style="background-color: #f9fafb;">
                 <div class="text-sm font-medium text-gray-700">Min Speech Duration</div>
                 <div class="text-lg font-semibold text-blue-600">{{ form.min_speech_duration }}s</div>
               </div>
-              <div class="bg-gray-50 p-3 rounded-md">
+              <div class="p-3 rounded-md" style="background-color: #f9fafb;">
                 <div class="text-sm font-medium text-gray-700">Min Silence Duration</div>
                 <div class="text-lg font-semibold text-blue-600">{{ form.min_silence_duration }}s</div>
               </div>
-              <div class="bg-gray-50 p-3 rounded-md">
+              <div class="p-3 rounded-md" style="background-color: #f9fafb;">
                 <div class="text-sm font-medium text-gray-700">Prefix Padding Duration</div>
                 <div class="text-lg font-semibold text-blue-600">{{ form.prefix_padding_duration }}s</div>
               </div>
-              <div class="bg-gray-50 p-3 rounded-md">
+              <div class="p-3 rounded-md" style="background-color: #f9fafb;">
                 <div class="text-sm font-medium text-gray-700">Max Buffered Speech</div>
                 <div class="text-lg font-semibold text-blue-600">{{ form.max_buffered_speech }}s</div>
               </div>
-              <div class="bg-gray-50 p-3 rounded-md">
+              <div class="p-3 rounded-md" style="background-color: #f9fafb;">
                 <div class="text-sm font-medium text-gray-700">Activation Threshold</div>
                 <div class="text-lg font-semibold text-blue-600">{{ form.activation_threshold }}</div>
               </div>
-              <div class="bg-gray-50 p-3 rounded-md">
+              <div class="p-3 rounded-md" style="background-color: #f9fafb;">
                 <div class="text-sm font-medium text-gray-700">Preferred Voice</div>
                 <div class="text-lg font-semibold text-blue-600 capitalize">{{ form.preferred_voice }}</div>
               </div>

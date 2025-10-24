@@ -67,7 +67,7 @@
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full">
-          <thead class="bg-gray-50 border-b border-gray-200">
+          <thead class="border-b border-gray-200" style="background-color: #f9fafb;">
             <tr>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Profile
@@ -90,7 +90,7 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200">
-            <tr v-for="profile in profiles.data" :key="profile.id" class="hover:bg-gray-50">
+            <tr v-for="profile in profiles.data" :key="profile.id" class="hover:bg-gray-100">
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center">
                   <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
@@ -181,14 +181,14 @@
             <Link
               v-if="profiles.links[0].url"
               :href="profiles.links[0].url || '#'"
-              class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-100"
             >
               Previous
             </Link>
             <Link
               v-if="profiles.links[profiles.links.length - 1].url"
               :href="profiles.links[profiles.links.length - 1].url || '#'"
-              class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-100"
             >
               Next
             </Link>
@@ -216,7 +216,7 @@
                     link.active
                       ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
                       : link.url
-                      ? 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                      ? 'bg-white border-gray-300 text-gray-500 hover:bg-gray-100'
                       : 'bg-white border-gray-300 text-gray-400 cursor-not-allowed',
                     index === 0 ? 'rounded-l-md' : '',
                     index === profiles.links.length - 1 ? 'rounded-r-md' : ''
