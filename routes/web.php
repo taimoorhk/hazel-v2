@@ -62,6 +62,10 @@ Route::get('/test-profile-data-check', function () {
     return Inertia::render('TestProfileDataCheck');
 })->name('test-profile-data-check');
 
+Route::get('/test-profile-data-verification', function () {
+    return Inertia::render('TestProfileDataVerification');
+})->name('test-profile-data-verification');
+
 
 
 // Simple billing route (no backend authentication required)

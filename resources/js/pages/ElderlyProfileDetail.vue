@@ -2,8 +2,8 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head } from '@inertiajs/vue3';
 import { useAuthGuard } from '@/composables/useAuthGuard';
-// import { useSupabaseUser } from '@/composables/useSupabaseUser';
-import { ref, onMounted } from 'vue';
+import { useSupabaseUser } from '@/composables/useSupabaseUser';
+import { ref, onMounted, computed } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { supabase } from '@/lib/supabaseClient';
@@ -22,13 +22,33 @@ interface ElderlyProfile {
 
 
 useAuthGuard();
-// const { user } = useSupabaseUser();
+const { user } = useSupabaseUser();
 const page = usePage();
 
 // Reactive data
 const profile = ref<ElderlyProfile | null>(null);
 const loading = ref(true);
 const error = ref<string | null>(null);
+
+// Get account ID based on logged-in user
+const getAccountId = () => {
+  const currentUser = user.value;
+  if (!currentUser?.email) {
+    return 6; // Default fallback
+  }
+  
+  const emailToAccountId: Record<string, number> = {
+    'mtaimoorhas1@gmail.com': 6,
+    'jsahib@gmail.com': 6, // This is an elderly profile under account 6
+    'microassetsmain@gmail.com': 7, // Account ID for microassetsmain
+    // Add more mappings as needed
+  };
+  
+  return emailToAccountId[currentUser.email] || 6; // Default to account 6
+};
+
+// Computed account ID
+const accountId = computed(() => getAccountId());
 
 const fetchProfileDetails = async (profileId: string) => {
   try {
@@ -118,11 +138,16 @@ onMounted(async () => {
             <p class="text-gray-600 text-sm">
               Comprehensive health insights and conversation analytics for {{ profile.name }}
             </p>
+            <div class="mt-2 text-xs text-gray-500">
+              <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded">Account ID: {{ accountId }}</span>
+              <span class="bg-green-100 text-green-800 px-2 py-1 rounded ml-2">Profile ID: {{ profile.id }}</span>
+              <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded ml-2">User: {{ user?.email || 'Unknown' }}</span>
+            </div>
           </CardHeader>
           <CardContent>
             <CleanWorkingDashboard 
               :profile-id="profile.id" 
-              :account-id="6"
+              :account-id="accountId"
               :is-elderly-profile="true"
             />
           </CardContent>

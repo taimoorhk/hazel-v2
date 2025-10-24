@@ -671,12 +671,14 @@ const formatLastCall = () => {
 
 // Risk assessment helper functions
 const getRiskStatusClass = (score: number) => {
+  if (score === 0 && !hasData.value) return 'risk-pending'
   if (score >= 7) return 'risk-high'
   if (score >= 4) return 'risk-moderate'
   return 'risk-low'
 }
 
 const getRiskStatusText = (score: number) => {
+  if (score === 0 && !hasData.value) return 'Stats Pending'
   if (score >= 7) return 'High Risk'
   if (score >= 4) return 'Moderate Risk'
   return 'Low Risk'
@@ -1450,6 +1452,11 @@ onUnmounted(() => {
 .risk-status.risk-low {
   background: #f0fdf4;
   color: #16a34a;
+}
+
+.risk-status.risk-pending {
+  background: #fef3c7;
+  color: #d97706;
 }
 
 /* Analytics Section */

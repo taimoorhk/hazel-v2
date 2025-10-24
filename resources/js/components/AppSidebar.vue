@@ -60,12 +60,16 @@ const filteredMainNavItems = computed(() => {
     });
   }
   
+  // Remove Reports page for all user types except Admin
+  if (meta && meta.role !== 'Admin' && meta.role !== 'Administration') {
+    items = items.filter(item => item.title !== 'Reports');
+  }
+  
+  // Remove Elderly Profiles for Normal Users
   if (meta && meta.role === 'Normal User') {
     items = items.filter(item => item.title !== 'Elderly Profiles');
   }
-  if (meta && meta.role === 'Organization') {
-    items = items.filter(item => item.title !== 'Reports');
-  }
+  
   return items;
 });
 </script>
