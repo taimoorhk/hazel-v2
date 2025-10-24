@@ -66,6 +66,14 @@ Route::get('/test-profile-data-verification', function () {
     return Inertia::render('TestProfileDataVerification');
 })->name('test-profile-data-verification');
 
+Route::get('/test-weekly-stats-pending', function () {
+    return Inertia::render('TestWeeklyStatsPending');
+})->name('test-weekly-stats-pending');
+
+Route::get('/test-canary-data-pending', function () {
+    return Inertia::render('TestCanaryDataPending');
+})->name('test-canary-data-pending');
+
 
 
 // Simple billing route (no backend authentication required)

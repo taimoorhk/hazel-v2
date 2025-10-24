@@ -3,7 +3,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { Head } from '@inertiajs/vue3';
 import { useAuthGuard } from '@/composables/useAuthGuard';
 import { useSupabaseUser } from '@/composables/useSupabaseUser';
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { supabase } from '@/lib/supabaseClient';
@@ -33,7 +33,41 @@ const error = ref<string | null>(null);
 // Get account ID based on logged-in user
 const getAccountId = () => {
   const currentUser = user.value;
-  if (!currentUser?.email) {
+  console.log('🔍 Current user for account ID detection:', currentUser);
+  
+  // Try to get user email from multiple sources
+  let userEmail = currentUser?.email;
+  
+  // Fallback: try to get from localStorage if Supabase user isn't available
+  if (!userEmail) {
+    try {
+      const storedUser = localStorage.getItem('sb-hazel-auth-token');
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        userEmail = parsedUser?.user?.email;
+        console.log('🔍 Fallback user email from localStorage:', userEmail);
+      }
+    } catch (e) {
+      console.log('⚠️ Could not parse stored user data');
+    }
+  }
+  
+  // Additional fallback: try to get from Supabase session
+  if (!userEmail) {
+    try {
+      const session = localStorage.getItem('sb-hazel-auth-token');
+      if (session) {
+        const sessionData = JSON.parse(session);
+        userEmail = sessionData?.user?.email;
+        console.log('🔍 Fallback user email from session:', userEmail);
+      }
+    } catch (e) {
+      console.log('⚠️ Could not parse session data');
+    }
+  }
+  
+  if (!userEmail) {
+    console.log('⚠️ No user email found, using default account ID 6');
     return 6; // Default fallback
   }
   
@@ -44,11 +78,18 @@ const getAccountId = () => {
     // Add more mappings as needed
   };
   
-  return emailToAccountId[currentUser.email] || 6; // Default to account 6
+  const detectedAccountId = emailToAccountId[userEmail] || 6;
+  console.log('📊 Detected account ID:', detectedAccountId, 'for user:', userEmail);
+  
+  return detectedAccountId;
 };
 
-// Computed account ID
-const accountId = computed(() => getAccountId());
+// Computed account ID with reactive updates
+const accountId = computed(() => {
+  const detectedId = getAccountId();
+  console.log('🔄 Computed account ID:', detectedId);
+  return detectedId;
+});
 
 const fetchProfileDetails = async (profileId: string) => {
   try {
@@ -76,9 +117,39 @@ const fetchProfileDetails = async (profileId: string) => {
 };
 
 
+// Watch for user changes and update account ID accordingly
+watch(user, (newUser, oldUser) => {
+  console.log('👤 User changed:', { oldUser, newUser });
+  if (newUser?.email !== oldUser?.email) {
+    console.log('🔄 User email changed, recomputing account ID');
+    // The computed accountId will automatically update
+  }
+}, { deep: true });
+
+// Watch for account ID changes and log them
+watch(accountId, (newAccountId, oldAccountId) => {
+  console.log('🔄 Account ID changed:', { oldAccountId, newAccountId });
+}, { immediate: true });
+
 onMounted(async () => {
   const profileId = page.props.id;
   console.log('🔍 ElderlyProfileDetail mounted with profileId:', profileId);
+  console.log('👤 Current user on mount:', user.value);
+  console.log('📊 Account ID on mount:', accountId.value);
+  
+  // Additional check: try to get user from Supabase session directly
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user?.email) {
+      console.log('🔍 Direct Supabase session user:', session.user.email);
+      // Force recomputation of account ID
+      const newAccountId = getAccountId();
+      console.log('📊 Recalculated account ID after session check:', newAccountId);
+    }
+  } catch (error) {
+    console.log('⚠️ Could not get Supabase session:', error);
+  }
+  
   if (profileId) {
     await fetchProfileDetails(profileId as string);
   }

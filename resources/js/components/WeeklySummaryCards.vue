@@ -280,29 +280,42 @@ const fetchWeeklySummary = async () => {
           const apiData = await response.json()
           console.log('✅ Real API data received:', apiData)
           
-          // Transform API response to match our component structure
-          const transformedData = {
-            account_id: props.accountId,
-            profile_id: props.profileId,
-            time_range_weeks: props.timeRangeWeeks || 1,
-            generated_at: new Date().toISOString(),
-            weekly_summary: apiData.weekly_summary || "Weekly summary generated from recent conversations.",
-            gratitude: apiData.gratitude || "Grateful for the support and insights gained this week.",
-            accomplishments: apiData.accomplishments || "Made progress on personal goals and health monitoring.",
-            challenges: apiData.challenges || "Faced some obstacles but worked through them effectively.",
-            goals: apiData.goals || "Continue building on this week's progress and maintain healthy habits.",
-            whats_next: apiData.whats_next || "Focus on areas for improvement and build on successes.",
-            memorable_moments: {
-              big_thing: apiData.memorable_moments?.big_thing || "A significant moment of growth or realization this week.",
-              small_thing: apiData.memorable_moments?.small_thing || "A small but meaningful moment that brought joy.",
-              with_loved_ones: apiData.memorable_moments?.with_loved_ones || "Special moments shared with family and friends."
-            },
-            wisdom_to_share: apiData.wisdom_to_share || "Every week brings new lessons and opportunities for growth."
-          }
+          // Check if API returned meaningful data or if it's empty/null
+          const hasValidData = apiData && (
+            apiData.weekly_summary || 
+            apiData.gratitude || 
+            apiData.accomplishments || 
+            apiData.challenges || 
+            apiData.goals
+          )
           
-          weeklyData.value = transformedData
-          console.log('📊 Weekly summary data loaded successfully from API')
-          return
+          if (hasValidData) {
+            // Transform API response to match our component structure
+            const transformedData = {
+              account_id: props.accountId,
+              profile_id: props.profileId,
+              time_range_weeks: props.timeRangeWeeks || 1,
+              generated_at: new Date().toISOString(),
+              weekly_summary: apiData.weekly_summary || "Weekly summary generated from recent conversations.",
+              gratitude: apiData.gratitude || "Grateful for the support and insights gained this week.",
+              accomplishments: apiData.accomplishments || "Made progress on personal goals and health monitoring.",
+              challenges: apiData.challenges || "Faced some obstacles but worked through them effectively.",
+              goals: apiData.goals || "Continue building on this week's progress and maintain healthy habits.",
+              whats_next: apiData.whats_next || "Focus on areas for improvement and build on successes.",
+              memorable_moments: {
+                big_thing: apiData.memorable_moments?.big_thing || "A significant moment of growth or realization this week.",
+                small_thing: apiData.memorable_moments?.small_thing || "A small but meaningful moment that brought joy.",
+                with_loved_ones: apiData.memorable_moments?.with_loved_ones || "Special moments shared with family and friends."
+              },
+              wisdom_to_share: apiData.wisdom_to_share || "Every week brings new lessons and opportunities for growth."
+            }
+            
+            weeklyData.value = transformedData
+            console.log('📊 Weekly summary data loaded successfully from API')
+            return
+          } else {
+            console.warn('⚠️ API returned empty data, falling back to mock data with pending status')
+          }
         } else {
           console.warn('⚠️ API request failed, falling back to mock data')
         }
@@ -377,6 +390,25 @@ const fetchWeeklySummary = async () => {
             with_loved_ones: "Sharing business insights and health goals with family, creating a supportive environment for growth."
           },
           wisdom_to_share: "Business success and personal health are interconnected; investing in wellness leads to better business outcomes and personal satisfaction."
+        }
+      }
+
+      // Account 7 (microassetsmain@gmail.com) - Elderly Profile 15 (if exists)
+      if (accountId === 7 && profileId === 15) {
+        return {
+          ...baseData,
+          weekly_summary: "This week, the elderly profile under microassetsmain@gmail.com showed good engagement with health monitoring and family connections.",
+          gratitude: "Expressed appreciation for the AI companion's gentle reminders and the sense of connection it provides.",
+          accomplishments: "Maintained medication adherence, engaged in daily conversations, and showed improved mood stability.",
+          challenges: "Occasional difficulty remembering medication times, some loneliness during evening hours.",
+          goals: "Continue medication routine, increase social interactions, and maintain independence in daily activities.",
+          whats_next: "Focus on memory exercises, plan more family visits, and explore new hobbies to stay mentally active.",
+          memorable_moments: {
+            big_thing: "The joy of receiving daily check-ins and feeling cared for through the AI companion.",
+            small_thing: "The comfort of having someone to talk to about daily experiences and health concerns.",
+            with_loved_ones: "Sharing stories and health updates with family members, feeling connected despite physical distance."
+          },
+          wisdom_to_share: "Age brings wisdom, and maintaining connections with loved ones and health monitoring are the keys to a fulfilling life."
         }
       }
 

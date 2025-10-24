@@ -58,7 +58,10 @@
               <div class="risk-icon">🧠</div>
             </div>
             <div class="risk-content">
-              <div class="risk-score">{{ Math.round((statsData?.aggregated_health_summary?.alzheimer_risk_score || 0) * 10) / 10 }}/10</div>
+              <div class="risk-score">
+                <span v-if="hasData">{{ Math.round((statsData?.aggregated_health_summary?.alzheimer_risk_score || 0) * 10) / 10 }}/10</span>
+                <span v-else class="text-gray-500">Pending</span>
+              </div>
               <div class="risk-status" :class="getRiskStatusClass(statsData?.aggregated_health_summary?.alzheimer_risk_score || 0)">
                 {{ getRiskStatusText(statsData?.aggregated_health_summary?.alzheimer_risk_score || 0) }}
               </div>
@@ -71,7 +74,10 @@
               <div class="risk-icon">🤲</div>
             </div>
             <div class="risk-content">
-              <div class="risk-score">{{ Math.round((statsData?.aggregated_health_summary?.parkinson_risk_score || 0) * 10) / 10 }}/10</div>
+              <div class="risk-score">
+                <span v-if="hasData">{{ Math.round((statsData?.aggregated_health_summary?.parkinson_risk_score || 0) * 10) / 10 }}/10</span>
+                <span v-else class="text-gray-500">Pending</span>
+              </div>
               <div class="risk-status" :class="getRiskStatusClass(statsData?.aggregated_health_summary?.parkinson_risk_score || 0)">
                 {{ getRiskStatusText(statsData?.aggregated_health_summary?.parkinson_risk_score || 0) }}
               </div>
@@ -84,7 +90,10 @@
               <div class="risk-icon">😔</div>
             </div>
             <div class="risk-content">
-              <div class="risk-score">{{ Math.round((statsData?.aggregated_health_summary?.depression_risk_score || 0) * 10) / 10 }}/10</div>
+              <div class="risk-score">
+                <span v-if="hasData">{{ Math.round((statsData?.aggregated_health_summary?.depression_risk_score || 0) * 10) / 10 }}/10</span>
+                <span v-else class="text-gray-500">Pending</span>
+              </div>
               <div class="risk-status" :class="getRiskStatusClass(statsData?.aggregated_health_summary?.depression_risk_score || 0)">
                 {{ getRiskStatusText(statsData?.aggregated_health_summary?.depression_risk_score || 0) }}
               </div>
@@ -97,7 +106,10 @@
               <div class="risk-icon">😰</div>
             </div>
             <div class="risk-content">
-              <div class="risk-score">{{ Math.round((statsData?.aggregated_health_summary?.anxiety_risk_score || 0) * 10) / 10 }}/10</div>
+              <div class="risk-score">
+                <span v-if="hasData">{{ Math.round((statsData?.aggregated_health_summary?.anxiety_risk_score || 0) * 10) / 10 }}/10</span>
+                <span v-else class="text-gray-500">Pending</span>
+              </div>
               <div class="risk-status" :class="getRiskStatusClass(statsData?.aggregated_health_summary?.anxiety_risk_score || 0)">
                 {{ getRiskStatusText(statsData?.aggregated_health_summary?.anxiety_risk_score || 0) }}
               </div>
@@ -110,7 +122,10 @@
               <div class="risk-icon">⚠️</div>
             </div>
             <div class="risk-content">
-              <div class="risk-score">{{ Math.round((statsData?.aggregated_health_summary?.fall_risk_score || 0) * 10) / 10 }}/10</div>
+              <div class="risk-score">
+                <span v-if="hasData">{{ Math.round((statsData?.aggregated_health_summary?.fall_risk_score || 0) * 10) / 10 }}/10</span>
+                <span v-else class="text-gray-500">Pending</span>
+              </div>
               <div class="risk-status" :class="getRiskStatusClass(statsData?.aggregated_health_summary?.fall_risk_score || 0)">
                 {{ getRiskStatusText(statsData?.aggregated_health_summary?.fall_risk_score || 0) }}
               </div>
@@ -123,7 +138,10 @@
               <div class="risk-icon">🧮</div>
             </div>
             <div class="risk-content">
-              <div class="risk-score">{{ Math.round((statsData?.aggregated_health_summary?.cognitive_risk_score || 0) * 10) / 10 }}/10</div>
+              <div class="risk-score">
+                <span v-if="hasData">{{ Math.round((statsData?.aggregated_health_summary?.cognitive_risk_score || 0) * 10) / 10 }}/10</span>
+                <span v-else class="text-gray-500">Pending</span>
+              </div>
               <div class="risk-status" :class="getRiskStatusClass(statsData?.aggregated_health_summary?.cognitive_risk_score || 0)">
                 {{ getRiskStatusText(statsData?.aggregated_health_summary?.cognitive_risk_score || 0) }}
               </div>
