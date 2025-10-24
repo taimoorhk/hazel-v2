@@ -3,7 +3,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { Head } from '@inertiajs/vue3';
 import { useAuthGuard } from '@/composables/useAuthGuard';
 import { useSupabaseUser } from '@/composables/useSupabaseUser';
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { supabase } from '@/lib/supabaseClient';
@@ -30,44 +30,68 @@ const profile = ref<ElderlyProfile | null>(null);
 const loading = ref(true);
 const error = ref<string | null>(null);
 
-// Get account ID based on logged-in user
-const getAccountId = () => {
-  const currentUser = user.value;
-  console.log('🔍 Current user for account ID detection:', currentUser);
+// Get account ID based on logged-in user with multiple detection methods
+const getAccountId = async () => {
+  console.log('🔍 Starting account ID detection...');
   
-  // Try to get user email from multiple sources
-  let userEmail = currentUser?.email;
+  // Method 1: Try useSupabaseUser composable
+  let userEmail = user.value?.email;
+  console.log('🔍 Method 1 - useSupabaseUser:', userEmail);
   
-  // Fallback: try to get from localStorage if Supabase user isn't available
+  // Method 2: Try localStorage with multiple keys
   if (!userEmail) {
-    try {
-      const storedUser = localStorage.getItem('sb-hazel-auth-token');
-      if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
-        userEmail = parsedUser?.user?.email;
-        console.log('🔍 Fallback user email from localStorage:', userEmail);
+    const localStorageKeys = [
+      'sb-hazel-auth-token',
+      'supabase.auth.token',
+      'sb-auth-token',
+      'supabase-session'
+    ];
+    
+    for (const key of localStorageKeys) {
+      try {
+        const storedData = localStorage.getItem(key);
+        if (storedData) {
+          const parsedData = JSON.parse(storedData);
+          userEmail = parsedData?.user?.email || parsedData?.email;
+          if (userEmail) {
+            console.log(`🔍 Method 2 - localStorage (${key}):`, userEmail);
+            break;
+          }
+        }
+      } catch (e) {
+        console.log(`⚠️ Could not parse localStorage key ${key}:`, e);
       }
-    } catch (e) {
-      console.log('⚠️ Could not parse stored user data');
     }
   }
   
-  // Additional fallback: try to get from Supabase session
+  // Method 3: Try direct Supabase session
   if (!userEmail) {
     try {
-      const session = localStorage.getItem('sb-hazel-auth-token');
-      if (session) {
-        const sessionData = JSON.parse(session);
-        userEmail = sessionData?.user?.email;
-        console.log('🔍 Fallback user email from session:', userEmail);
+      const { data: { session } } = await supabase.auth.getSession();
+      userEmail = session?.user?.email;
+      console.log('🔍 Method 3 - Direct Supabase session:', userEmail);
+    } catch (error) {
+      console.log('⚠️ Could not get Supabase session:', error);
+    }
+  }
+  
+  // Method 4: Try to get from document.cookie or other sources
+  if (!userEmail) {
+    try {
+      // Check if there's any user info in cookies or other storage
+      const cookies = document.cookie.split(';');
+      for (const cookie of cookies) {
+        if (cookie.includes('user') || cookie.includes('email')) {
+          console.log('🔍 Method 4 - Cookie check:', cookie);
+        }
       }
     } catch (e) {
-      console.log('⚠️ Could not parse session data');
+      console.log('⚠️ Could not check cookies:', e);
     }
   }
   
   if (!userEmail) {
-    console.log('⚠️ No user email found, using default account ID 6');
+    console.log('⚠️ No user email found after all methods, using default account ID 6');
     return 6; // Default fallback
   }
   
@@ -79,17 +103,26 @@ const getAccountId = () => {
   };
   
   const detectedAccountId = emailToAccountId[userEmail] || 6;
-  console.log('📊 Detected account ID:', detectedAccountId, 'for user:', userEmail);
+  console.log('📊 Final detected account ID:', detectedAccountId, 'for user:', userEmail);
   
   return detectedAccountId;
 };
 
-// Computed account ID with reactive updates
-const accountId = computed(() => {
-  const detectedId = getAccountId();
-  console.log('🔄 Computed account ID:', detectedId);
-  return detectedId;
-});
+// Reactive account ID with async detection
+const accountId = ref(6); // Default fallback
+
+// Function to update account ID
+const updateAccountId = async () => {
+  try {
+    const detectedId = await getAccountId();
+    if (accountId.value !== detectedId) {
+      console.log('🔄 Account ID updated:', accountId.value, '->', detectedId);
+      accountId.value = detectedId;
+    }
+  } catch (error) {
+    console.error('⚠️ Error updating account ID:', error);
+  }
+};
 
 const fetchProfileDetails = async (profileId: string) => {
   try {
@@ -118,11 +151,11 @@ const fetchProfileDetails = async (profileId: string) => {
 
 
 // Watch for user changes and update account ID accordingly
-watch(user, (newUser, oldUser) => {
+watch(user, async (newUser, oldUser) => {
   console.log('👤 User changed:', { oldUser, newUser });
   if (newUser?.email !== oldUser?.email) {
     console.log('🔄 User email changed, recomputing account ID');
-    // The computed accountId will automatically update
+    await updateAccountId();
   }
 }, { deep: true });
 
@@ -135,20 +168,21 @@ onMounted(async () => {
   const profileId = page.props.id;
   console.log('🔍 ElderlyProfileDetail mounted with profileId:', profileId);
   console.log('👤 Current user on mount:', user.value);
-  console.log('📊 Account ID on mount:', accountId.value);
   
-  // Additional check: try to get user from Supabase session directly
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user?.email) {
-      console.log('🔍 Direct Supabase session user:', session.user.email);
-      // Force recomputation of account ID
-      const newAccountId = getAccountId();
-      console.log('📊 Recalculated account ID after session check:', newAccountId);
-    }
-  } catch (error) {
-    console.log('⚠️ Could not get Supabase session:', error);
-  }
+  // Update account ID with comprehensive detection
+  await updateAccountId();
+  console.log('📊 Final account ID on mount:', accountId.value);
+  
+  // Set up periodic account ID verification (every 5 seconds)
+  const accountIdCheckInterval = setInterval(async () => {
+    console.log('🔄 Periodic account ID check...');
+    await updateAccountId();
+  }, 5000);
+  
+  // Clean up interval on unmount
+  onUnmounted(() => {
+    clearInterval(accountIdCheckInterval);
+  });
   
   if (profileId) {
     await fetchProfileDetails(profileId as string);
