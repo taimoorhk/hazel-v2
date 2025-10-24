@@ -74,6 +74,10 @@ Route::get('/test-canary-data-pending', function () {
     return Inertia::render('TestCanaryDataPending');
 })->name('test-canary-data-pending');
 
+Route::get('/test-account-isolation', function () {
+    return Inertia::render('TestAccountIsolation');
+})->name('test-account-isolation');
+
 
 
 // Simple billing route (no backend authentication required)
