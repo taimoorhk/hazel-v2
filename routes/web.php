@@ -54,6 +54,14 @@ Route::get('/test-weekly-summary', function () {
     return Inertia::render('TestWeeklySummary');
 })->name('test-weekly-summary');
 
+Route::get('/test-weekly-summary-api', function () {
+    return Inertia::render('TestWeeklySummaryAPI');
+})->name('test-weekly-summary-api');
+
+Route::get('/test-profile-data-check', function () {
+    return Inertia::render('TestProfileDataCheck');
+})->name('test-profile-data-check');
+
 
 
 // Simple billing route (no backend authentication required)

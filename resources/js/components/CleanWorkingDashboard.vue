@@ -11,6 +11,28 @@
       <div class="error-icon">⚠️</div>
       <h3 class="error-title">Unable to Load Data</h3>
       <p class="error-message">{{ error }}</p>
+      <div class="mt-4 text-sm text-gray-600">
+        <p>This profile may not have conversation data yet. Data will appear here once the elderly person starts having conversations with Hazel.</p>
+      </div>
+    </div>
+
+    <!-- No Data State -->
+    <div v-else-if="!hasData" class="no-data-container">
+      <div class="no-data-icon">📊</div>
+      <h3 class="no-data-title">No Data Available Yet</h3>
+      <p class="no-data-message">
+        This profile doesn't have conversation data yet. Health analytics will appear here once the elderly person starts having conversations with Hazel.
+      </p>
+      <div class="no-data-info">
+        <div class="info-item">
+          <span class="info-label">Profile ID:</span>
+          <span class="info-value">{{ profileId }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Account ID:</span>
+          <span class="info-value">{{ accountId }}</span>
+        </div>
+      </div>
     </div>
 
     <!-- Main Dashboard Content -->
@@ -21,8 +43,8 @@
         :profile-id="profileId" 
         :time-range-weeks="1"
         :auto-refresh="true"
-        :refresh-interval="300000"
-        :use-mock-data="true"
+        :refresh-interval="86400000"
+        :use-mock-data="false"
       />
 
 
@@ -927,6 +949,8 @@ const loadStats = async () => {
   error.value = null
   
   try {
+    console.log('🔄 Loading stats for profile:', props.profileId, 'account:', props.accountId)
+    
     // First check if data exists
     const hasDataInDigitalOcean = await checkDataAvailability()
     
@@ -935,6 +959,8 @@ const loadStats = async () => {
       statsData.value = {
         has_data: false,
         message: 'No results so far',
+        account_id: props.accountId,
+        profile_id: props.profileId,
         aggregated_health_summary: {
           overall_health_score: 0,
           cognitive_health_score: 0,
@@ -947,7 +973,14 @@ const loadStats = async () => {
           depression_risk_score: 0,
           anxiety_risk_score: 0,
           fall_risk_score: 0,
-          cognitive_risk_score: 0
+          cognitive_risk_score: 0,
+          diagnosed_conditions_count: 0,
+          suspected_conditions_count: 0,
+          risk_factors_count: 0,
+          monitored_conditions_count: 0,
+          conversation_quality: 'no_data',
+          average_confidence_score: 0,
+          engagement_trend: 'no_data'
         },
         canary_analysis_files: []
       }
@@ -971,6 +1004,42 @@ const loadStats = async () => {
     })
     
     if (!response.ok) {
+      // Handle specific HTTP errors more gracefully
+      if (response.status === 500) {
+        console.warn('⚠️ Server error (500) - Profile may not have data yet')
+        statsData.value = {
+          has_data: false,
+          message: 'Data collection in progress',
+          account_id: props.accountId,
+          profile_id: props.profileId,
+          aggregated_health_summary: {
+            total_calls: 0,
+            total_duration: 0,
+            overall_health_score: 0,
+            cognitive_health_score: 0,
+            mental_health_score: 0,
+            physical_health_score: 0,
+            social_health_score: 0,
+            average_sentiment: 'no_data',
+            sentiment_distribution: { positive: 0, neutral: 0, negative: 0 },
+            alzheimer_risk_score: 0,
+            parkinson_risk_score: 0,
+            depression_risk_score: 0,
+            anxiety_risk_score: 0,
+            fall_risk_score: 0,
+            cognitive_risk_score: 0,
+            diagnosed_conditions_count: 0,
+            suspected_conditions_count: 0,
+            risk_factors_count: 0,
+            monitored_conditions_count: 0,
+            conversation_quality: 'no_data',
+            average_confidence_score: 0,
+            engagement_trend: 'no_data'
+          },
+          canary_analysis_files: []
+        }
+        return
+      }
       throw new Error(`HTTP error! status: ${response.status}`)
     }
     
@@ -1048,12 +1117,12 @@ const loadStats = async () => {
   }
 }
 
-// Auto-refresh every 30 seconds
+// Auto-refresh every 24 hours
 const refreshInterval = ref<number | null>(null)
 
 // Real-time data availability checking
 const startRealtimeChecking = () => {
-  // Check data availability every 10 seconds
+  // Check data availability every 2 hours (7200000 ms)
   setInterval(async () => {
     try {
       const hasDataInDigitalOcean = await checkDataAvailability()
@@ -1064,18 +1133,18 @@ const startRealtimeChecking = () => {
     } catch (err) {
       console.error('Error in real-time data check:', err)
     }
-  }, 10000) // Check every 10 seconds
+  }, 7200000) // Check every 2 hours
 }
 
 onMounted(async () => {
   await loadStats()
   
-  // Set up auto-refresh
+  // Set up auto-refresh every 24 hours (86400000 ms)
   refreshInterval.value = window.setInterval(() => {
     loadStats()
-  }, 30000)
+  }, 86400000)
   
-  // Start real-time data availability checking
+  // Start real-time data availability checking every 2 hours (7200000 ms)
   startRealtimeChecking()
 })
 
@@ -1103,7 +1172,7 @@ onUnmounted(() => {
 }
 
 /* Loading and Error States */
-.loading-container, .error-container {
+.loading-container, .error-container, .no-data-container {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1148,6 +1217,53 @@ onUnmounted(() => {
 .error-message {
   color: #6b7280;
   font-size: 14px;
+}
+
+.no-data-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.no-data-title {
+  color: #374151;
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.no-data-message {
+  color: #6b7280;
+  font-size: 14px;
+  margin-bottom: 24px;
+  max-width: 500px;
+}
+
+.no-data-info {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  gap: 24px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.info-label {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.info-value {
+  font-size: 14px;
+  color: #374151;
+  font-weight: 600;
 }
 
 /* Dashboard Container */

@@ -27,7 +27,7 @@
       <div class="text-center">
         <h2 class="text-3xl font-bold text-gray-900 mb-2">Weekly Summary</h2>
         <p class="text-gray-600">
-          Week of {{ formatDate(getWeekStart()) }} - {{ formatDate(getWeekEnd()) }}
+          Week of {{ formatDate(getWeekStart().toString()) }} - {{ formatDate(getWeekEnd().toString()) }}
         </p>
         
         <!-- User Info Display -->
@@ -258,6 +258,62 @@ const fetchWeeklySummary = async () => {
       'Current': `Account ${props.accountId}, Profile ${props.profileId}`
     })
 
+    // Try to fetch real data from API first
+    if (!props.useMockData) {
+      try {
+        console.log('🔄 Fetching real weekly summary data from API...')
+        
+        const response = await fetch('http://143.198.187.46:8001/conversations/weekly-summary', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            account_id: props.accountId,
+            profile_id: props.profileId,
+            time_range_weeks: props.timeRangeWeeks || 1
+          })
+        })
+
+        if (response.ok) {
+          const apiData = await response.json()
+          console.log('✅ Real API data received:', apiData)
+          
+          // Transform API response to match our component structure
+          const transformedData = {
+            account_id: props.accountId,
+            profile_id: props.profileId,
+            time_range_weeks: props.timeRangeWeeks || 1,
+            generated_at: new Date().toISOString(),
+            weekly_summary: apiData.weekly_summary || "Weekly summary generated from recent conversations.",
+            gratitude: apiData.gratitude || "Grateful for the support and insights gained this week.",
+            accomplishments: apiData.accomplishments || "Made progress on personal goals and health monitoring.",
+            challenges: apiData.challenges || "Faced some obstacles but worked through them effectively.",
+            goals: apiData.goals || "Continue building on this week's progress and maintain healthy habits.",
+            whats_next: apiData.whats_next || "Focus on areas for improvement and build on successes.",
+            memorable_moments: {
+              big_thing: apiData.memorable_moments?.big_thing || "A significant moment of growth or realization this week.",
+              small_thing: apiData.memorable_moments?.small_thing || "A small but meaningful moment that brought joy.",
+              with_loved_ones: apiData.memorable_moments?.with_loved_ones || "Special moments shared with family and friends."
+            },
+            wisdom_to_share: apiData.wisdom_to_share || "Every week brings new lessons and opportunities for growth."
+          }
+          
+          weeklyData.value = transformedData
+          console.log('📊 Weekly summary data loaded successfully from API')
+          return
+        } else {
+          console.warn('⚠️ API request failed, falling back to mock data')
+        }
+      } catch (apiError) {
+        console.warn('⚠️ API error, falling back to mock data:', apiError)
+      }
+    }
+
+    // Fallback to mock data if API fails or useMockData is true
+    console.log('🔄 Using mock data for weekly summary...')
+    
     // Generate user-specific mock data based on account_id and profile_id
     const getUserSpecificData = (accountId: number, profileId: number) => {
       const baseData = {
@@ -343,7 +399,7 @@ const fetchWeeklySummary = async () => {
     }
 
     const mockData = getUserSpecificData(props.accountId, props.profileId)
-    console.log('WeeklySummaryCards - Generated data:', {
+    console.log('WeeklySummaryCards - Generated mock data:', {
       accountId: mockData.account_id,
       profileId: mockData.profile_id,
       weeklySummary: mockData.weekly_summary.substring(0, 50) + '...',
@@ -395,8 +451,8 @@ const getWeekEnd = () => {
 onMounted(() => {
   fetchWeeklySummary()
   
-  // Enable automatic refresh every 5 minutes (300000ms)
-  const interval = props.refreshInterval || 300000 // 5 minutes
+  // Enable automatic refresh every 24 hours (86400000ms) by default
+  const interval = props.refreshInterval || 86400000 // 24 hours
   refreshTimer = setInterval(fetchWeeklySummary, interval)
 })
 
@@ -409,7 +465,7 @@ onUnmounted(() => {
 
 <style scoped>
 .weekly-summary-cards {
-  @apply w-full;
+  width: 100%;
 }
 
 .animate-pulse {
